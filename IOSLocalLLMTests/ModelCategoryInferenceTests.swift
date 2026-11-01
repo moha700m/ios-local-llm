@@ -225,7 +225,9 @@ final class ModelCategoryInferenceTests: XCTestCase {
         )
         XCTAssertEqual(ornith.repoID, "mlx-community/Ornith-1.0-9B-4bit")
         XCTAssertEqual(ornith.platformCompatibility, .highMemoryMobileAndMac)
-        XCTAssertEqual(ornith.contextWindowTokens, 4_096)
+        // The catalog records Ornith's published 256K context; the runtime
+        // capability profile applies the bounded rotating KV-cache budget.
+        XCTAssertEqual(ornith.contextWindowTokens, 262_144)
         XCTAssertLessThanOrEqual(
             ornith.approxRAMBytes + MemoryAdvisor.loadHeadroomReserve,
             MemoryAdvisor.maximumHighMemoryIPhoneProcessCeiling
