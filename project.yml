@@ -165,7 +165,7 @@ targets:
         "SWIFT_ACTIVE_COMPILATION_CONDITIONS[sdk=iphoneos27.*]": "$(inherited) FM_PCC"
         "SWIFT_ACTIVE_COMPILATION_CONDITIONS[sdk=iphonesimulator27.*]": "$(inherited) FM_PCC"
         "CODE_SIGN_ENTITLEMENTS[sdk=iphoneos27.*]": IOSLocalLLM/IOSLocalLLM-PCC.entitlements
-        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/IOSLocalLLM/Services/LlamaCpp/IOSLocalLLM-Bridging-Header.h"
+        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/IOSLocalLLM/Services/LlamaCpp/SanadAI-Bridging-Header.h"
         HEADER_SEARCH_PATHS:
           - "$(inherited)"
           - "$(SRCROOT)/ThirdParty/llama.cpp/tools/mtmd"

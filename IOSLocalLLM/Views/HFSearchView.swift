@@ -530,6 +530,22 @@ struct HFSearchRow: View {
                 }
                 .buttonStyle(.plain)
             }
+        case .paused:
+            HStack(spacing: 6) {
+                KMono(text: "paused", size: 10, weight: .semibold, color: T.warn)
+                Button { downloader.start() } label: {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(T.accent)
+                }
+                .buttonStyle(.plain)
+                Button { downloader.cancel() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(T.warn)
+                }
+                .buttonStyle(.plain)
+            }
         case .ready:
             KStatusBadge(glyph: .ready, label: "downloaded", color: T.good)
         }

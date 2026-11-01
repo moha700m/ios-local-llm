@@ -537,6 +537,8 @@ struct ModelDownloadCard: View {
                 .foregroundColor(T.warn)
         case .failed:
             KStatusBadge(glyph: .remote, label: "failed", color: T.bad)
+        case .paused:
+            KStatusBadge(glyph: .remote, label: "paused", color: T.warn)
         case .idle:
             EmptyView()
         }
@@ -671,6 +673,35 @@ struct ModelDownloadCard: View {
                     KMono(text: msg, size: 9, color: T.bad)
                         .lineLimit(2)
                 }
+
+            case .paused:
+                Button {
+                    model.start()
+                    HapticManager.impact(.medium)
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 10, weight: .medium))
+                        Text("resume")
+                            .font(T.mono(11, .semibold))
+                            .tracking(0.3)
+                    }
+                    .foregroundColor(T.bg)
+                    .padding(.horizontal, 10).padding(.vertical, 5)
+                    .background(RoundedRectangle(cornerRadius: 5).fill(T.ink))
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    model.cancel()
+                } label: {
+                    Text("cancel")
+                        .font(T.mono(10, .semibold))
+                        .foregroundColor(T.warn)
+                        .padding(.horizontal, 8).padding(.vertical, 5)
+                        .background(RoundedRectangle(cornerRadius: 5).fill(T.warn.opacity(0.12)))
+                }
+                .buttonStyle(.plain)
 
             case .enumerating:
                 HStack(spacing: 4) {

@@ -1286,6 +1286,9 @@ struct ModelsManagerView: View {
                             }
                         case .downloading, .enumerating:
                             statusPill(text: loc.t("downloading"), color: T.accent)
+                        case .paused:
+                            statusPill(text: loc.t("paused"), color: T.warn)
+                            cardButton(label: loc.t("Resume"), kind: .primary) { model.start() }
                         case .idle, .failed:
                             cardButton(label: loc.t("Download"), kind: .primary) { model.start() }
                         }
@@ -3430,6 +3433,20 @@ struct ModelsManagerView: View {
                     }
                     Spacer(minLength: 0)
                 }
+            case .paused:
+                progressStrip(progress: model.progress,
+                              downloaded: model.downloadedBytes,
+                              total: model.totalBytes,
+                              file: model.currentFile)
+                HStack(spacing: 6) {
+                    cardButton(label: loc.t("Resume download"), kind: .primary) {
+                        model.start()
+                    }
+                    cardButton(label: loc.t("Cancel download"), kind: .secondary) {
+                        model.cancel()
+                    }
+                    Spacer(minLength: 0)
+                }
             case .ready:
                 HStack(spacing: 6) {
                     statusPill(text: loc.t("ready"), color: T.good)
@@ -4217,6 +4234,9 @@ private struct ComboModelDownloadControl: View {
 
             case .failed:
                 actionButton(retryLabel)
+
+            case .paused:
+                actionButton(getLabel)
 
             case .idle:
                 actionButton(getLabel)

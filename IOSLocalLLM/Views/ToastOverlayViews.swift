@@ -1,3 +1,5 @@
+import SwiftUI
+
 // MARK: - ToastOverlayView
 // Mount once at the app root; consumes ToastCenter.shared.current and
 // renders a Studio-styled banner anchored to the top.

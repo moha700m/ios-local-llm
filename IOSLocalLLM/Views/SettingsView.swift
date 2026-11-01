@@ -1763,7 +1763,7 @@ private struct WhisperSTTBlock: View {
     @ViewBuilder
     private var downloadCard: some View {
         switch observer.state {
-        case .downloading, .enumerating:
+        case .downloading, .enumerating, .paused:
             progressCard
         case .failed(let msg):
             failedCard(message: msg)

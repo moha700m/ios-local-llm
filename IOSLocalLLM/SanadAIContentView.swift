@@ -1269,6 +1269,8 @@ struct CameraRootView: View {
             return "load fastvlm 0.5b"
         case .enumerating, .downloading:
             return "view fastvlm download"
+        case .paused:
+            return "resume fastvlm download"
         case .failed:
             return "retry fastvlm download"
         case .idle:
@@ -1291,6 +1293,9 @@ struct CameraRootView: View {
         case .ready:
             Task { await FastVLMService.shared.load() }
         case .enumerating, .downloading:
+            AppBridge.shared.requestModels(.lens)
+        case .paused:
+            model.start()
             AppBridge.shared.requestModels(.lens)
         case .idle, .failed:
             model.start()

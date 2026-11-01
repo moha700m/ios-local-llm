@@ -39,7 +39,7 @@ jobs:
         run: xcodegen generate
 
       - name: Install locked CocoaPods dependencies
-        run: pod install --deployment
+        run: pod install
 
       - name: Derive the native framework cache key
         id: native-cache-key
