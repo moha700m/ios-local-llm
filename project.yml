@@ -364,6 +364,7 @@ targets:
           # and app-tab handoff runtime are deliberately not compiled into
           # the server-only target.
           - "Models/AppBridge.swift"
+          - "Models/AppSettings+SanadAIVoice.swift"
           - "Services/LifecycleController.swift"
           - "Services/WipeAllDataService.swift"
           - "Services/Bridge/Agent/**"
