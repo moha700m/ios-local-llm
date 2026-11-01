@@ -22,8 +22,8 @@ import SwiftUI
 final class ShareViewController: UIViewController {
 
     // App Group identifier — must match the main app's entitlements.
-    private static let appGroupID = "group.com.mesutcydev.ioslocalllm.shared"
-    private static let urlScheme  = "ios-local-llm"
+    private static let appGroupID = "group.com.sanadai.shared"
+    private static let urlScheme  = "sanadai"
 
     /// Threshold above which we stash text in a file and hand the
     /// filename to the main app instead of inlining via URL query.

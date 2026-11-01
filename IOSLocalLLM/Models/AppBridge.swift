@@ -11,7 +11,7 @@ final class AppBridge: ObservableObject {
     static let shared = AppBridge()
 
     /// App Group identifier — must match the share extension.
-    static let appGroupID = "group.com.mesutcydev.ioslocalllm.shared"
+    static let appGroupID = "group.com.sanadai.shared"
 
     // Set by AnalysisPanelView; consumed once by CodingAssistantView
     @Published var pendingCode: PendingCode? = nil
@@ -138,7 +138,7 @@ final class AppBridge: ObservableObject {
     /// The text/URL paths land in `pendingSharedText` and switch to the
     /// assistant tab so CodingAssistantView can prefill the composer.
     func handleIncomingURL(_ url: URL) {
-        guard url.scheme == "ios-local-llm", url.host == "share" else { return }
+        guard ["sanadai", "ios-local-llm"].contains(url.scheme), url.host == "share" else { return }
         guard let comps = URLComponents(url: url, resolvingAgainstBaseURL: false),
               let items = comps.queryItems
         else { return }

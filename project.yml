@@ -1,6 +1,6 @@
-name: OnDeviceLAS
+name: SanadAI
 options:
-  bundleIdPrefix: com.mesutcydev.ondevicelas
+  bundleIdPrefix: com.sanadai
   deploymentTarget:
     iOS: "18.0"
   xcodeVersion: "26.0"
@@ -8,6 +8,9 @@ options:
   groupSortPosition: top
 
 packages:
+  # Local SwiftUI glass voice orb used by the full assistant UI.
+  VoiceAgentOrb:
+    path: Packages/VoiceAgentOrb
   # MLX runtime stack. The app's source targets the mlx-swift-lm 3.x API
   # (actor type/processor registries, config creators receive Data not URL,
   # loadContainer(from:configuration:)) and imports MLXLMTransformers — the
@@ -29,10 +32,10 @@ packages:
     revision: e40e0a57a6f7ad08dc3fd87ad598a7aa6407d230
   mlx-swift-lm:
     url: https://github.com/ml-explore/mlx-swift-lm
-    from: "3.31.4"
+    exactVersion: "3.31.4"
   swift-transformers-mlx:
     url: https://github.com/DePasqualeOrg/swift-transformers-mlx
-    from: "0.2.0"
+    exactVersion: "0.2.0"
   coreai-models:
     # Local pin with OnDeviceLAS patch: removes FoundationModels
     # `.updateUsage` so the Core AI app launches on iOS 27 betas whose
@@ -64,6 +67,260 @@ settings:
       VALIDATE_PRODUCT: YES
 
 targets:
+  # ──────────────────────────────────────────────────────────────────────
+  # SanadAI — full application target.
+  #
+  # This is the complete SwiftUI workbench (assistant, lens/camera, voice,
+  # models, bridge, image generation, settings) — not the server-only
+  # OnDeviceLAS product. It compiles the whole IOSLocalLLM source tree and
+  # embeds the share extension.
+  # ──────────────────────────────────────────────────────────────────────
+  SanadAI:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: IOSLocalLLM
+        excludes:
+          - "IOSLocalLLMApp.swift"      # server-only @main; SanadAIApp.swift is the app entry
+          - "Info-SanadAI.plist"
+          - "**/*.mlmodelc"
+          - "**/FastVLM-0.5B-fp16/**"
+          - "**/yolo11n.mlpackage"
+          - "**/*.png"
+          - "**/*.PNG"
+          - "**/*.jpg"
+          - "**/*.JPG"
+          - "**/*.jpeg"
+          - "**/*.JPEG"
+          - "**/*.md"
+          - "**/*.pkg"
+          - "Resources/BundledVLM/**"
+          - "Resources/BundledVoiceModels/**"
+    resources:
+      - path: IOSLocalLLM/PrivacyInfo.xcprivacy
+      - path: IOSLocalLLM/Resources/Localization/WebTriggerKeywords.json
+      - path: IOSLocalLLM/Resources/Voice/cmudict.txt
+      - path: IOSLocalLLM/Resources/VoiceModelCatalog.json
+    info:
+      path: IOSLocalLLM/Info-SanadAI.plist
+      properties:
+        CFBundleDisplayName: "SanadAI"
+        CFBundleShortVersionString: "3.2.6"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        ITSAppUsesNonExemptEncryption: false
+        NSCameraUsageDescription: "SanadAI uses the camera to capture live video of your terminal, notes, or code for on-device analysis."
+        NSPhotoLibraryUsageDescription: "SanadAI can analyze images from your photo library on-device."
+        NSMicrophoneUsageDescription: "SanadAI uses the microphone for hold-to-talk dictation. Audio is transcribed on-device and never leaves your phone."
+        NSLocalNetworkUsageDescription: "SanadAI can expose your selected on-device language model to trusted computers on your local network."
+        NSSpeechRecognitionUsageDescription: "SanadAI uses on-device speech recognition to turn your voice into text."
+        UIRequiresFullScreen: true
+        UIStatusBarStyle: UIStatusBarStyleDarkContent
+        UIViewControllerBasedStatusBarAppearance: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UILaunchScreen:
+          UIColorName: ""
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        NSSupportsLiveActivities: true
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        CFBundleURLTypes:
+          - CFBundleURLName: com.sanadai.app.scheme
+            CFBundleURLSchemes:
+              - sanadai
+              - ios-local-llm
+    settings:
+      base:
+        PRODUCT_NAME: SanadAI
+        # Keep the Swift module name stable so the existing test sources can
+        # use `@testable import IOSLocalLLM` without a mass rename.
+        PRODUCT_MODULE_NAME: IOSLocalLLM
+        PRODUCT_BUNDLE_IDENTIFIER: com.sanadai.app
+        INFOPLIST_FILE: IOSLocalLLM/Info-SanadAI.plist
+        CODE_SIGN_ENTITLEMENTS: IOSLocalLLM/SanadAI.entitlements
+        CODE_SIGN_STYLE: Automatic
+        VERSIONING_SYSTEM: apple-generic
+        CURRENT_PROJECT_VERSION: "146"
+        # Signed CI builds inject the installed profile names as build
+        # settings (see .github/workflows/ios-build.yml). Empty values are
+        # harmless for unsigned archives because code signing is disabled.
+        PROVISIONING_PROFILE_SPECIFIER: "$(SANADAI_PROFILE_SPECIFIER)"
+        TARGETED_DEVICE_FAMILY: "1"
+        "TARGETED_DEVICE_FAMILY[sdk=macosx*]": "2,6"
+        SUPPORTS_MACCATALYST: YES
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER: NO
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": IOSLocalLLM/IOSLocalLLM-Catalyst.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
+        SWIFT_EMIT_LOC_STRINGS: YES
+        ENABLE_TESTABILITY: YES
+        "SWIFT_ACTIVE_COMPILATION_CONDITIONS[sdk=iphoneos27.*]": "$(inherited) FM_PCC"
+        "SWIFT_ACTIVE_COMPILATION_CONDITIONS[sdk=iphonesimulator27.*]": "$(inherited) FM_PCC"
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphoneos27.*]": IOSLocalLLM/IOSLocalLLM-PCC.entitlements
+        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/IOSLocalLLM/Services/LlamaCpp/IOSLocalLLM-Bridging-Header.h"
+        HEADER_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(SRCROOT)/ThirdParty/llama.cpp/tools/mtmd"
+          - "$(SRCROOT)/ThirdParty/llama.cpp/include"
+          - "$(SRCROOT)/ThirdParty/llama.cpp/ggml/include"
+          - "$(SRCROOT)/ThirdParty/whisper.cpp/include"
+    dependencies:
+      - package: VoiceAgentOrb
+        product: VoiceAgentOrb
+      - package: mlx-swift-lm
+        product: MLXLLM
+      - package: mlx-swift-lm
+        product: MLXLMCommon
+      - package: mlx-swift-lm
+        product: MLXVLM
+      - package: swift-transformers-mlx
+        product: MLXLMTransformers
+      - package: mlx-swift
+        product: MLX
+      - package: mlx-swift
+        product: MLXNN
+      - package: mlx-swift
+        product: MLXRandom
+      - package: mlx-swift
+        product: MLXFast
+      - framework: ThirdParty/llama.cpp/build-apple/llama.xcframework
+        embed: true
+      - framework: ThirdParty/whisper.cpp/build-apple/whisper.xcframework
+        embed: true
+      - target: SanadAIShareExtension
+        embed: true
+        platformFilter: iOS
+    postCompileScripts:
+      - name: Copy bundled VLM (SmolVLM2 GGUF)
+        script: |
+          set -e
+          SRC="${SRCROOT}/IOSLocalLLM/Resources/BundledVLM"
+          DEST="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/BundledVLM"
+          if [ ! -d "$SRC" ]; then
+            echo "warning: BundledVLM source not found at $SRC — skipping (Lens will use the network download path)."
+            exit 0
+          fi
+          mkdir -p "$DEST"
+          rsync -a --delete "$SRC/" "$DEST/"
+          echo "Copied bundled VLM to $DEST"
+        runOnlyWhenInstalling: false
+        basedOnDependencyAnalysis: false
+      - name: Copy bundled voice models (Silero VAD)
+        script: |
+          set -e
+          SRC="${SRCROOT}/IOSLocalLLM/Resources/BundledVoiceModels"
+          DEST="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/BundledVoiceModels"
+          if [ ! -d "$SRC" ]; then
+            echo "warning: BundledVoiceModels source not found at $SRC — voice models must be downloaded at runtime."
+            exit 0
+          fi
+          mkdir -p "$DEST"
+          rm -rf "$DEST/KittenTTS" "$DEST/Kokoro"
+          rsync -a --delete "$SRC/Silero/" "$DEST/Silero/"
+          echo "Copied bundled Silero VAD to $DEST/Silero"
+        runOnlyWhenInstalling: false
+        basedOnDependencyAnalysis: false
+      - name: Compile and bundle FastVLM Core ML encoder
+        script: |
+          set -e
+          SRC="${SRCROOT}/IOSLocalLLM/Models/FastVLM-0.5B-fp16/fastvithd.mlpackage"
+          DEST_DIR="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}"
+          DEST_PACKAGE="${DEST_DIR}/fastvithd.mlpackage"
+          DEST_COMPILED="${DEST_DIR}/fastvithd.mlmodelc"
+          if [ ! -d "$SRC" ]; then
+            echo "warning: fastvithd.mlpackage not found at $SRC — FastVLM will compile a downloaded package at runtime."
+            exit 0
+          fi
+          COREMLC="$(xcrun --find coremlcompiler 2>/dev/null || true)"
+          if [ -n "$COREMLC" ] && [ -x "$COREMLC" ]; then
+            rm -rf "$DEST_COMPILED"
+            "$COREMLC" compile "$SRC" "$DEST_DIR" >/dev/null
+            rm -rf "$DEST_PACKAGE"
+            echo "Compiled FastVLM encoder to $DEST_COMPILED"
+          else
+            rsync -a --delete "$SRC/" "$DEST_PACKAGE/"
+            echo "Copied raw FastVLM encoder to $DEST_PACKAGE"
+          fi
+        runOnlyWhenInstalling: false
+        basedOnDependencyAnalysis: false
+
+  SanadAIShareExtension:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: IOSLocalLLMShareExtension
+        excludes:
+          - "Info.plist"
+          - "Info-SanadAI.plist"
+          - "*.entitlements"
+    info:
+      path: IOSLocalLLMShareExtension/Info-SanadAI.plist
+      properties:
+        CFBundleDisplayName: "SanadAI"
+        CFBundleShortVersionString: "3.2.6"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        ITSAppUsesNonExemptEncryption: false
+        NSExtension:
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsImageWithMaxCount: 1
+              NSExtensionActivationSupportsText: true
+              NSExtensionActivationSupportsWebURLWithMaxCount: 1
+              NSExtensionActivationSupportsWebPageWithMaxCount: 1
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+    settings:
+      base:
+        PRODUCT_NAME: SanadAIShare
+        PRODUCT_MODULE_NAME: SanadAIShare
+        PRODUCT_BUNDLE_IDENTIFIER: com.sanadai.app.share
+        INFOPLIST_FILE: IOSLocalLLMShareExtension/Info-SanadAI.plist
+        CODE_SIGN_ENTITLEMENTS: IOSLocalLLMShareExtension/SanadAI.entitlements
+        CODE_SIGN_STYLE: Automatic
+        PROVISIONING_PROFILE_SPECIFIER: "$(SANADAI_EXTENSION_PROFILE_SPECIFIER)"
+        VERSIONING_SYSTEM: apple-generic
+        CURRENT_PROJECT_VERSION: "146"
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_EMIT_LOC_STRINGS: YES
+
+  SanadAITests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: IOSLocalLLMTests
+        excludes:
+          - CoreAIModelStoreTests.swift
+          - LocalAPIServerTests.swift
+          - DeviceTierAdvisorTests.swift
+          - Int64FormattedBytesTests.swift
+          - LASAppIdentityTests.swift
+          - URLSafetyValidatorTests.swift
+    dependencies:
+      - target: SanadAI
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.sanadai.app.tests
+        INFOPLIST_FILE: ""
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_EMIT_LOC_STRINGS: NO
+        SWIFT_OBJC_BRIDGING_HEADER: ""
+        SWIFT_INSTALL_OBJC_HEADER: NO
+        HEADER_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(SRCROOT)/ThirdParty/llama.cpp/tools/mtmd"
+          - "$(SRCROOT)/ThirdParty/llama.cpp/include"
+          - "$(SRCROOT)/ThirdParty/llama.cpp/ggml/include"
+          - "$(SRCROOT)/ThirdParty/whisper.cpp/include"
+
+
   OnDeviceLAS:
     type: application
     platform: iOS
@@ -392,6 +649,18 @@ targets:
         SWIFT_OBJC_BRIDGING_HEADER: ""
 
 schemes:
+  SanadAI:
+    build:
+      targets:
+        SanadAI: all
+        SanadAITests: [test]
+    test:
+      config: Debug
+      targets:
+        - SanadAITests
+    archive:
+      config: Release
+
   OnDeviceLAS:
     build:
       targets:

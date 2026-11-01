@@ -1,9 +1,9 @@
 platform :ios, '18.0'
 
-project 'OnDeviceLAS.xcodeproj'
+project 'SanadAI.xcodeproj'
 
-target 'OnDeviceLAS' do
-  target 'OnDeviceLASTests' do
+target 'SanadAI' do
+  target 'SanadAITests' do
     inherit! :search_paths
   end
 end

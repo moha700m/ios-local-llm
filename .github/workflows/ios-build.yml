@@ -1,0 +1,577 @@
+name: SanadAI iOS Build
+
+# Kept manual while the pipeline is brought up. A final commit adds the
+# `push: branches: [main]` trigger once the first green run is confirmed.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Marketing version (CFBundleShortVersionString)"
+        required: false
+        default: "3.2.6"
+      build_number:
+        description: "Build number (CFBundleVersion). Defaults to the workflow run number."
+        required: false
+        default: ""
+      signing:
+        description: "Signing mode. auto = signed when Apple secrets are present, otherwise unsigned."
+        type: choice
+        options:
+          - auto
+          - unsigned
+          - signed
+        default: auto
+      export_method:
+        description: "Export method for signed builds."
+        type: choice
+        options:
+          - ad-hoc
+          - app-store-connect
+          - development
+          - enterprise
+        default: ad-hoc
+      run_tests:
+        description: "Run the SanadAI unit-test suite on an iOS Simulator."
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sanadai-ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  XCODE_VERSION: "26.6"
+  SCHEME: "SanadAI"
+  PROJECT_NAME: "SanadAI"
+  WORKSPACE: "SanadAI.xcworkspace"
+  APP_PRODUCT: "SanadAI"
+  APP_BUNDLE_ID: "com.sanadai.app"
+  EXTENSION_BUNDLE_ID: "com.sanadai.app.share"
+  MARKETING_VERSION: ${{ github.event.inputs.version || '3.2.6' }}
+  BUILD_NUMBER: ${{ github.event.inputs.build_number || github.run_number }}
+  SIGNING_INPUT: ${{ github.event.inputs.signing || 'auto' }}
+  EXPORT_METHOD: ${{ github.event.inputs.export_method || 'ad-hoc' }}
+  RUN_TESTS: ${{ github.event.inputs.run_tests || 'true' }}
+
+jobs:
+  build:
+    name: Build, test, and package SanadAI
+    runs-on: macos-26
+    timeout-minutes: 180
+    steps:
+      - name: Checkout repository with submodules
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          submodules: recursive
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Select Xcode ${{ env.XCODE_VERSION }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app"
+          echo "DEVELOPER_DIR=/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer" >> "$GITHUB_ENV"
+          xcodebuild -version | tee build-xcode-version.txt
+          xcrun --sdk iphoneos --show-sdk-version | sed 's/^/iOS SDK: /'
+
+      - name: Install XcodeGen, CocoaPods, and CMake
+        shell: bash
+        run: |
+          set -euo pipefail
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
+          command -v pod      >/dev/null 2>&1 || brew install cocoapods
+          command -v cmake    >/dev/null 2>&1 || brew install cmake
+          echo "xcodegen: $(xcodegen --version)"
+          echo "cocoapods: $(pod --version)"
+          echo "cmake: $(cmake --version | head -n 1)"
+
+      - name: Restore native llama.cpp / whisper.cpp frameworks
+        id: native-cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ThirdParty/llama.cpp/build-apple
+            ThirdParty/whisper.cpp/build-apple
+          key: native-${{ runner.os }}-${{ hashFiles('scripts/build_native_frameworks.sh', 'scripts/native/build_whisper_ios.sh', 'Patches/llama.cpp-ios-only-xcframework.patch', 'ThirdParty/llama.cpp/build-xcframework.sh', 'ThirdParty/whisper.cpp/build-xcframework.sh') }}-v1
+
+      - name: Build native llama.cpp / whisper.cpp frameworks
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./scripts/build_native_frameworks.sh 2>&1 | tee native-frameworks.log
+
+      - name: Verify native frameworks
+        shell: bash
+        run: |
+          set -euo pipefail
+          for framework in \
+            ThirdParty/llama.cpp/build-apple/llama.xcframework \
+            ThirdParty/whisper.cpp/build-apple/whisper.xcframework; do
+            if [ ! -d "$framework" ]; then
+              echo "::error::Missing native framework: $framework"
+              exit 1
+            fi
+            echo "OK: $framework"
+          done
+
+      - name: Restore Swift Package Manager cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .spm-cache
+          key: spm-${{ runner.os }}-${{ hashFiles('project.yml', 'Packages/**/Package.swift') }}
+          restore-keys: |
+            spm-${{ runner.os }}-
+
+      - name: Apply version and build number
+        shell: bash
+        env:
+          MARKETING_VERSION: ${{ env.MARKETING_VERSION }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import re
+
+          version = os.environ["MARKETING_VERSION"].strip()
+          if not re.fullmatch(r"[0-9]+(\.[0-9]+){1,2}", version):
+              raise SystemExit(f"Invalid marketing version: {version!r}")
+
+          path = pathlib.Path("project.yml")
+          text = path.read_text(encoding="utf-8")
+          updated, count = re.subn(
+              r'CFBundleShortVersionString:\s*"[^"]*"',
+              f'CFBundleShortVersionString: "{version}"',
+              text,
+          )
+          if count == 0:
+              raise SystemExit("No CFBundleShortVersionString entries found in project.yml")
+          path.write_text(updated, encoding="utf-8")
+          print(f"Set {count} CFBundleShortVersionString entries to {version}")
+          PY
+          echo "Build number: ${BUILD_NUMBER}"
+
+      - name: Generate Xcode project
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodegen generate
+
+      - name: Install CocoaPods dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          pod install --verbose 2>&1 | tee pod-install.log
+
+      - name: Resolve Swift Package dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/logs
+          xcodebuild -resolvePackageDependencies \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -clonedSourcePackagesDirPath "$PWD/.spm-cache" \
+            2>&1 | tee build/logs/resolve-packages.log
+
+      - name: Prepare code signing
+        id: signing
+        shell: bash
+        env:
+          APPLE_CERTIFICATE_P12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_PROVISIONING_PROFILE_APP: ${{ secrets.APPLE_PROVISIONING_PROFILE_APP }}
+          APPLE_PROVISIONING_PROFILE_EXTENSION: ${{ secrets.APPLE_PROVISIONING_PROFILE_EXTENSION }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+
+          mode="$SIGNING_INPUT"
+          if [ "$mode" = "auto" ]; then
+            if [ -n "${APPLE_CERTIFICATE_P12:-}" ] || [ -n "${APPLE_PROVISIONING_PROFILE_APP:-}" ]; then
+              mode="signed"
+            else
+              mode="unsigned"
+            fi
+          fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+
+          if [ "$mode" = "unsigned" ]; then
+            echo "Signing mode: unsigned. The IPA is suitable for ESign/Sideloadly-style re-signing."
+            exit 0
+          fi
+
+          missing=0
+          for name in APPLE_CERTIFICATE_P12 APPLE_CERTIFICATE_PASSWORD APPLE_PROVISIONING_PROFILE_APP APPLE_PROVISIONING_PROFILE_EXTENSION APPLE_TEAM_ID; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Signed build requested but secret $name is missing."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "::error::Provide APPLE_CERTIFICATE_P12, APPLE_CERTIFICATE_PASSWORD, APPLE_PROVISIONING_PROFILE_APP, APPLE_PROVISIONING_PROFILE_EXTENSION, and APPLE_TEAM_ID, or run the workflow with signing=unsigned."
+            exit 1
+          fi
+
+          keychain="$RUNNER_TEMP/sanadai-signing.keychain-db"
+          keychain_password="$(uuidgen)"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+
+          cert_path="$RUNNER_TEMP/distribution.p12"
+          printf '%s' "$APPLE_CERTIFICATE_P12" | base64 -D > "$cert_path"
+          security import "$cert_path" -k "$keychain" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain"
+
+          security list-keychains -d user | tr -d '"' > "$RUNNER_TEMP/keychains.txt"
+          # shellcheck disable=SC2046
+          security list-keychains -d user -s "$keychain" $(cat "$RUNNER_TEMP/keychains.txt")
+          echo "keychain=$keychain" >> "$GITHUB_OUTPUT"
+          security find-identity -v -p codesigning "$keychain"
+
+          profile_dir="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$profile_dir"
+          app_profile="$profile_dir/sanadai-app.mobileprovision"
+          extension_profile="$profile_dir/sanadai-share.mobileprovision"
+          printf '%s' "$APPLE_PROVISIONING_PROFILE_APP" | base64 -D > "$app_profile"
+          printf '%s' "$APPLE_PROVISIONING_PROFILE_EXTENSION" | base64 -D > "$extension_profile"
+
+          security cms -D -i "$app_profile" > "$RUNNER_TEMP/app-profile.plist"
+          security cms -D -i "$extension_profile" > "$RUNNER_TEMP/extension-profile.plist"
+          app_profile_name="$(plutil -extract Name raw -o - "$RUNNER_TEMP/app-profile.plist")"
+          extension_profile_name="$(plutil -extract Name raw -o - "$RUNNER_TEMP/extension-profile.plist")"
+          app_profile_appid="$(plutil -extract Entitlements.application-identifier raw -o - "$RUNNER_TEMP/app-profile.plist")"
+          extension_profile_appid="$(plutil -extract Entitlements.application-identifier raw -o - "$RUNNER_TEMP/extension-profile.plist")"
+
+          echo "app profile: $app_profile_name ($app_profile_appid)"
+          echo "extension profile: $extension_profile_name ($extension_profile_appid)"
+
+          case "$app_profile_appid" in
+            *".$APP_BUNDLE_ID") ;;
+            *) echo "::error::APPLE_PROVISIONING_PROFILE_APP does not match bundle ID $APP_BUNDLE_ID (got $app_profile_appid)."; exit 1 ;;
+          esac
+          case "$extension_profile_appid" in
+            *".$EXTENSION_BUNDLE_ID") ;;
+            *) echo "::error::APPLE_PROVISIONING_PROFILE_EXTENSION does not match bundle ID $EXTENSION_BUNDLE_ID (got $extension_profile_appid)."; exit 1 ;;
+          esac
+
+          echo "profile_name=$app_profile_name" >> "$GITHUB_OUTPUT"
+          echo "extension_profile_name=$extension_profile_name" >> "$GITHUB_OUTPUT"
+
+      - name: Archive SanadAI for a generic iOS device
+        shell: bash
+        env:
+          MODE: ${{ steps.signing.outputs.mode }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_PROFILE_NAME: ${{ steps.signing.outputs.profile_name }}
+          EXTENSION_PROFILE_NAME: ${{ steps.signing.outputs.extension_profile_name }}
+          SIGNING_KEYCHAIN: ${{ steps.signing.outputs.keychain }}
+        run: |
+          set -euo pipefail
+          mkdir -p build/logs build/out
+          archive_path="$PWD/build/$APP_PRODUCT.xcarchive"
+
+          common=(
+            -workspace "$WORKSPACE"
+            -scheme "$SCHEME"
+            -configuration Release
+            -destination "generic/platform=iOS"
+            -archivePath "$archive_path"
+            -clonedSourcePackagesDirPath "$PWD/.spm-cache"
+            -derivedDataPath "$PWD/build/DerivedData"
+            MARKETING_VERSION="$MARKETING_VERSION"
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
+          )
+
+          if [ "$MODE" = "unsigned" ]; then
+            xcodebuild archive "${common[@]}" \
+              CODE_SIGNING_ALLOWED=NO \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGN_IDENTITY="" \
+              2>&1 | tee build/logs/archive.log
+          else
+            xcodebuild archive "${common[@]}" \
+              CODE_SIGN_STYLE=Manual \
+              CODE_SIGN_IDENTITY="Apple Distribution" \
+              DEVELOPMENT_TEAM="$TEAM_ID" \
+              SANADAI_PROFILE_SPECIFIER="$APP_PROFILE_NAME" \
+              SANADAI_EXTENSION_PROFILE_SPECIFIER="$EXTENSION_PROFILE_NAME" \
+              OTHER_CODE_SIGN_FLAGS="--keychain $SIGNING_KEYCHAIN" \
+              2>&1 | tee build/logs/archive.log
+          fi
+
+      - name: Package or export the IPA
+        shell: bash
+        env:
+          MODE: ${{ steps.signing.outputs.mode }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_PROFILE_NAME: ${{ steps.signing.outputs.profile_name }}
+          EXTENSION_PROFILE_NAME: ${{ steps.signing.outputs.extension_profile_name }}
+        run: |
+          set -euo pipefail
+          archive_path="$PWD/build/$APP_PRODUCT.xcarchive"
+          ipa_name="$APP_PRODUCT-${MARKETING_VERSION}-${BUILD_NUMBER}-${MODE}.ipa"
+          echo "IPA_NAME=$ipa_name" >> "$GITHUB_ENV"
+
+          if [ "$MODE" = "unsigned" ]; then
+            app_path="$(find "$archive_path/Products/Applications" -maxdepth 1 -name '*.app' -type d | head -n 1)"
+            if [ -z "$app_path" ]; then
+              echo "::error::Archive does not contain an .app product."
+              exit 1
+            fi
+            rm -rf build/ipa
+            mkdir -p build/ipa/Payload
+            ditto "$app_path" "build/ipa/Payload/$(basename "$app_path")"
+            (cd build/ipa && /usr/bin/zip -qry "$PWD/../out/$ipa_name" Payload)
+            echo "Packaged unsigned IPA: build/out/$ipa_name"
+          else
+            cat > build/ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>${EXPORT_METHOD}</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>teamID</key>
+            <string>${TEAM_ID:-}</string>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>compileBitcode</key>
+            <false/>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${APP_BUNDLE_ID}</key>
+              <string>${APP_PROFILE_NAME}</string>
+              <key>${EXTENSION_BUNDLE_ID}</key>
+              <string>${EXTENSION_PROFILE_NAME}</string>
+            </dict>
+          </dict>
+          </plist>
+          PLIST
+            rm -rf build/export
+            mkdir -p build/export
+            xcodebuild -exportArchive \
+              -archivePath "$archive_path" \
+              -exportPath "$PWD/build/export" \
+              -exportOptionsPlist "$PWD/build/ExportOptions.plist" \
+              2>&1 | tee build/logs/export.log
+            exported="$(find build/export -maxdepth 1 -name '*.ipa' -type f | head -n 1)"
+            if [ -z "$exported" ]; then
+              echo "::error::xcodebuild -exportArchive produced no IPA."
+              exit 1
+            fi
+            cp "$exported" "build/out/$ipa_name"
+            echo "Exported signed IPA: build/out/$ipa_name"
+          fi
+
+      - name: Validate IPA contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          ipa="$(find build/out -maxdepth 1 -name '*.ipa' -type f | head -n 1)"
+          if [ -z "$ipa" ]; then
+            echo "::error::No IPA found in build/out."
+            exit 1
+          fi
+
+          rm -rf build/verify
+          mkdir -p build/verify
+          ditto -x -k "$ipa" build/verify
+          app_bundle="$(find build/verify/Payload -maxdepth 1 -name '*.app' -type d | head -n 1)"
+          if [ -z "$app_bundle" ]; then
+            echo "::error::IPA has no Payload/*.app bundle."
+            exit 1
+          fi
+
+          bundle_id="$(plutil -extract CFBundleIdentifier raw -o - "$app_bundle/Info.plist")"
+          version="$(plutil -extract CFBundleShortVersionString raw -o - "$app_bundle/Info.plist")"
+          build_number="$(plutil -extract CFBundleVersion raw -o - "$app_bundle/Info.plist")"
+          executable="$(plutil -extract CFBundleExecutable raw -o - "$app_bundle/Info.plist")"
+
+          {
+            echo "IPA: $ipa"
+            echo "Bundle: $bundle_id"
+            echo "Version: $version ($build_number)"
+            echo "Executable: $app_bundle/$executable"
+            echo "Architectures:"
+            lipo -info "$app_bundle/$executable"
+            echo
+            echo "Embedded frameworks:"
+            ls -1 "$app_bundle/Frameworks" 2>/dev/null || echo "(none)"
+            echo
+            echo "PlugIns:"
+            ls -1 "$app_bundle/PlugIns" 2>/dev/null || echo "(none)"
+            echo
+            echo "Code signature:"
+            if [ -d "$app_bundle/_CodeSignature" ]; then echo "present"; else echo "absent (unsigned)"; fi
+          } | tee build/out/ipa-validation.txt
+
+          unzip -l "$ipa" > build/out/ipa-contents.txt
+          lipo -info "$app_bundle/$executable" | grep -q "arm64"
+          test -d "$app_bundle/Frameworks/llama.framework"
+          test -d "$app_bundle/Frameworks/whisper.framework"
+          test -d "$app_bundle/PlugIns/SanadAIShare.appex"
+
+      - name: Run SanadAI unit tests
+        if: env.RUN_TESTS == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild test \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -only-testing:SanadAITests \
+            -clonedSourcePackagesDirPath "$PWD/.spm-cache" \
+            -derivedDataPath "$PWD/build/DerivedDataTests" \
+            2>&1 | tee build/logs/tests.log
+
+      - name: Write build metadata
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/out
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import subprocess
+
+          out = pathlib.Path("build/out")
+          ipas = sorted(out.glob("*.ipa"))
+          ipa = ipas[0] if ipas else None
+          metadata = {
+              "project": "SanadAI",
+              "scheme": os.environ.get("SCHEME"),
+              "marketing_version": os.environ.get("MARKETING_VERSION"),
+              "build_number": os.environ.get("BUILD_NUMBER"),
+              "signing_mode": os.environ.get("MODE") or "unknown",
+              "commit": os.environ.get("GITHUB_SHA"),
+              "run_id": os.environ.get("GITHUB_RUN_ID"),
+              "run_number": os.environ.get("GITHUB_RUN_NUMBER"),
+              "runner": os.environ.get("RUNNER_OS"),
+              "xcode_version": subprocess.run(["xcodebuild", "-version"], capture_output=True, text=True).stdout.strip(),
+              "ipa": None,
+          }
+          if ipa:
+              data = ipa.read_bytes()
+              metadata["ipa"] = {
+                  "filename": ipa.name,
+                  "size_bytes": len(data),
+                  "sha256": hashlib.sha256(data).hexdigest(),
+              }
+              (out / f"{ipa.name}.sha256").write_text(
+                  f"{hashlib.sha256(data).hexdigest()}  {ipa.name}\n", encoding="utf-8"
+              )
+          (out / "build-metadata.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(metadata, indent=2))
+          PY
+
+      - name: Upload IPA
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: SanadAI-ipa-${{ github.run_number }}
+          path: build/out/*.ipa
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload build metadata and validation
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: SanadAI-metadata-${{ github.run_number }}
+          path: |
+            build/out/build-metadata.json
+            build/out/ipa-validation.txt
+            build/out/ipa-contents.txt
+            build/out/*.sha256
+            build-xcode-version.txt
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: SanadAI-logs-${{ github.run_number }}
+          path: |
+            build/logs/*.log
+            native-frameworks.log
+            pod-install.log
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Diagnose failure
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          {
+            echo "## SanadAI build failed"
+            echo
+            echo "Workflow: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo
+            echo "### Compiler / packaging errors"
+            echo '```'
+            grep -nE "error:|fatal error:|The following build commands failed|Code Sign error|error: exportArchive|Testing failed|No such file" build/logs/*.log native-frameworks.log pod-install.log 2>/dev/null | tail -n 80
+            echo '```'
+            echo
+            echo "### Tail of each log"
+            for log in build/logs/*.log native-frameworks.log pod-install.log; do
+              [ -f "$log" ] || continue
+              echo "#### $log"
+              echo '```'
+              tail -n 40 "$log"
+              echo '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Clean up signing keychain
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          keychain="${{ steps.signing.outputs.keychain }}"
+          if [ -n "$keychain" ] && [ -f "$keychain" ]; then
+            security delete-keychain "$keychain" || true
+          fi
+
+      - name: Write job summary
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          ipa="$(find build/out -maxdepth 1 -name '*.ipa' -type f | head -n 1)"
+          {
+            echo "## SanadAI iOS build"
+            echo
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Version | ${MARKETING_VERSION} (${BUILD_NUMBER}) |"
+            echo "| Signing | ${{ steps.signing.outputs.mode }} |"
+            echo "| Tests | ${RUN_TESTS} |"
+            echo "| Commit | ${GITHUB_SHA} |"
+            if [ -n "$ipa" ]; then
+              echo "| IPA | \`$(basename "$ipa")\` |"
+              echo "| SHA-256 | \`$(shasum -a 256 "$ipa" | awk '{print $1}')\` |"
+            else
+              echo "| IPA | not produced |"
+            fi
+            echo
+            if [ -n "$ipa" ]; then
+              echo "Download the IPA from the **SanadAI-ipa-${GITHUB_RUN_NUMBER}** artifact."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

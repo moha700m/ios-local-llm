@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Raises the per-process Jetsam memory limit for on-device LLM workloads. -->
+  <key>com.apple.developer.kernel.increased-memory-limit</key>
+  <true/>
+  <!-- 57-bit virtual address space for large memory-mapped model weights. -->
+  <key>com.apple.developer.kernel.extended-virtual-addressing</key>
+  <true/>
+  <!-- Shared container used by the SanadAI share extension. -->
+  <key>com.apple.security.application-groups</key>
+  <array>
+    <string>group.com.sanadai.shared</string>
+  </array>
+</dict>
+</plist>
