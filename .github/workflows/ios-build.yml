@@ -1,8 +1,24 @@
 name: SanadAI iOS Build
 
-# Kept manual while the pipeline is brought up. A final commit adds the
-# `push: branches: [main]` trigger once the first green run is confirmed.
+# Builds on every push to main that touches the app surface, and on demand for
+# release builds or a one-off check of any branch. Documentation-only commits
+# are filtered out so they do not spend macOS runner minutes.
 on:
+  push:
+    branches: [main]
+    paths:
+      - "IOSLocalLLM/**"
+      - "IOSLocalLLMShareExtension/**"
+      - "IOSLocalLLMTests/**"
+      - "Packages/**"
+      - "Patches/**"
+      - "ThirdParty/**"
+      - "scripts/build_native_frameworks.sh"
+      - "scripts/native/**"
+      - "project.yml"
+      - "Podfile"
+      - "Podfile.lock"
+      - ".github/workflows/ios-build.yml"
   workflow_dispatch:
     inputs:
       version:

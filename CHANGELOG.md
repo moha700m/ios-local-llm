@@ -5,6 +5,14 @@ and intends to use semantic version tags for source releases.
 
 ## [Unreleased]
 
+### Added
+
+- SanadAI iOS build workflow that compiles the app and its share extension on a
+  macOS runner, runs the unit-test suite, and publishes an IPA together with
+  SHA-256 metadata and build logs.
+- CI documentation covering triggers, inputs, artifacts, unsigned/ESign
+  re-signing, and the Apple secrets required for signed builds.
+
 ## [3.2.6] - 2026-07-29
 
 ### Added
