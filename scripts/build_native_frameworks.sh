@@ -51,4 +51,13 @@ if [[ "$include_catalyst" == 1 ]]; then
   "${repository_root}/scripts/native/build_catalyst_slice.sh" whisper
 fi
 
+for framework in \
+  "${llama_root}/build-apple/llama.xcframework" \
+  "${repository_root}/ThirdParty/whisper.cpp/build-apple/whisper.xcframework"; do
+  if [[ ! -d "$framework" ]]; then
+    echo "error: expected framework was not produced: $framework" >&2
+    exit 1
+  fi
+done
+
 echo "==> Native frameworks are ready"

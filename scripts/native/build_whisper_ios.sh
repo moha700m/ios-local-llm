@@ -26,6 +26,11 @@ GGML_METAL_EMBED_LIBRARY=ON
 GGML_BLAS_DEFAULT=ON
 GGML_METAL_USE_BF16=ON
 GGML_OPENMP=OFF
+# The upstream helper functions read this top-level variable, but this script
+# sources only the two packaging functions (not the upstream script's defaults).
+# Without it, `set -u` aborts the framework packaging step and no
+# whisper.xcframework is produced.
+BUILD_STATIC_XCFRAMEWORK=OFF
 
 common_c_flags="-Wno-macro-redefined -Wno-shorten-64-to-32 -Wno-unused-command-line-argument -g"
 common_cxx_flags="$common_c_flags"
