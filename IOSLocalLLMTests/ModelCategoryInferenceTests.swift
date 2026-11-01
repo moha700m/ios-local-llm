@@ -475,10 +475,12 @@ final class HFSearchServiceTests: XCTestCase {
     }
 
     func test_decodesBothHubIdentifierShapesAndMetadata() throws {
-        let json = #"[
+        let json = """
+        [
           {"modelId":"mlx-community/Qwen3-4B","downloads":123,"likes":7,"tags":["mlx","license:apache-2.0"],"pipeline_tag":"text-generation"},
           {"id":"owner/vision-model","downloads":9,"likes":2,"tags":["coreml"],"pipeline_tag":"image-text-to-text"}
-        ]"#
+        ]
+        """
         let models = try HFSearchService.decodeResults(Data(json.utf8))
 
         XCTAssertEqual(models.map(\.id), ["mlx-community/Qwen3-4B", "owner/vision-model"])
