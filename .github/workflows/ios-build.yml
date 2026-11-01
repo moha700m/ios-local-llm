@@ -92,7 +92,7 @@ jobs:
 
       - name: Restore native llama.cpp / whisper.cpp frameworks
         id: native-cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ThirdParty/llama.cpp/build-apple
@@ -105,6 +105,15 @@ jobs:
         run: |
           set -euo pipefail
           ./scripts/build_native_frameworks.sh 2>&1 | tee native-frameworks.log
+
+      - name: Save native frameworks cache
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          key: ${{ steps.native-cache.outputs.cache-primary-key }}
+          path: |
+            ThirdParty/llama.cpp/build-apple
+            ThirdParty/whisper.cpp/build-apple
 
       - name: Verify native frameworks
         shell: bash
@@ -121,12 +130,11 @@ jobs:
           done
 
       - name: Restore Swift Package Manager cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        id: spm-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .spm-cache
-          key: spm-${{ runner.os }}-${{ hashFiles('project.yml', 'Packages/**/Package.swift') }}
-          restore-keys: |
-            spm-${{ runner.os }}-
+          key: spm-v1-${{ runner.os }}
 
       - name: Apply version and build number
         shell: bash
@@ -179,6 +187,13 @@ jobs:
             -scheme "$SCHEME" \
             -clonedSourcePackagesDirPath "$PWD/.spm-cache" \
             2>&1 | tee build/logs/resolve-packages.log
+
+      - name: Save Swift Package Manager cache
+        if: steps.spm-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          key: ${{ steps.spm-cache.outputs.cache-primary-key }}
+          path: .spm-cache
 
       - name: Prepare code signing
         id: signing
