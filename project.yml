@@ -86,6 +86,7 @@ targets:
       - path: IOSLocalLLM
         excludes:
           - "IOSLocalLLMApp.swift"      # server-only @main; SanadAIApp.swift is the app entry
+          - "Info.plist"                # OnDeviceLAS target's plist; SanadAI uses Info-SanadAI.plist
           - "Info-SanadAI.plist"
           - "**/*.mlmodelc"
           - "**/FastVLM-0.5B-fp16/**"
