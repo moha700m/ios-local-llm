@@ -439,6 +439,8 @@ jobs:
       - name: Write build metadata
         if: always()
         shell: bash
+        env:
+          MODE: ${{ steps.signing.outputs.mode }}
         run: |
           set -euo pipefail
           mkdir -p build/out

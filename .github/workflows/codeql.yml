@@ -78,7 +78,7 @@ jobs:
       - name: Build the iOS app for analysis
         run: |
           xcodebuild \
-            -workspace OnDeviceLAS.xcworkspace \
+            -workspace SanadAI.xcworkspace \
             -scheme OnDeviceLAS \
             -configuration Debug \
             -sdk iphonesimulator \
