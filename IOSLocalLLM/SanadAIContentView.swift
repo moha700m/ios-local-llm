@@ -41,28 +41,32 @@ struct SanadAIContentView: View {
             // hub) sits at the right edge; Mac/Bridge moved to a Home button.
             homeTab
                 .tag(Tab.home)
+                .toolbar(.hidden, for: .tabBar)
                 .tabItem { Label("Home", systemImage: "house") }
 
             assistantTab
                 .tag(Tab.assistant)
+                .toolbar(.hidden, for: .tabBar)
                 .tabItem { Label("Assistant", systemImage: "brain") }
 
             cameraTab
                 .tag(Tab.camera)
+                .toolbar(.hidden, for: .tabBar)
                 .tabItem { Label("Lens", systemImage: "camera.viewfinder") }
 
             VoiceLibraryView(isActive: selectedTab == .voice)
                 .tag(Tab.voice)
+                .toolbar(.hidden, for: .tabBar)
                 .tabItem { Label("Voice", systemImage: "waveform") }
 
             ModelsManagerView(isActive: selectedTab == .models)
                 .tag(Tab.models)
+                .toolbar(.hidden, for: .tabBar)
                 .tabItem { Label("Models", systemImage: "cube.box") }
         }
         // The system chrome is replaced by SanadTabBar below. Keeping the
         // TabView (rather than hand-rolling a router) preserves selection
         // state, keyboard avoidance and every existing deep-link path.
-        .toolbar(.hidden, for: .tabBar)
         .tint(T.accent)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             SanadTabBar(items: tabBarItems, selection: $selectedTab)
