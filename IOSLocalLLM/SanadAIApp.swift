@@ -6,6 +6,10 @@ import SwiftUI
 struct SanadAIApp: App {
     @ObservedObject private var settings = AppSettings.shared
     @ObservedObject private var loc = LocalizationService.shared
+
+    init() {
+        LocalizationBridge.install()
+    }
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @Environment(\.scenePhase) private var scenePhase
     @State private var isShowingSplash = true
@@ -47,6 +51,11 @@ struct SanadAIApp: App {
             // point keeps the celebration consistent across MLX,
             // llama.cpp, and HF Search download paths.
             ConfettiOverlayView()
+            if !settings.hasChosenLanguage {
+                SanadLanguageGateView()
+                    .transition(.opacity)
+                    .zIndex(90)
+            }
             if isShowingSplash {
                 SanadSplashView {
                     withAnimation(.easeOut(duration: 0.28)) {

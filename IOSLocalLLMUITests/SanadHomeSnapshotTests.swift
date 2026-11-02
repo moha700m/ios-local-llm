@@ -20,6 +20,7 @@ final class SanadHomeSnapshotTests: XCTestCase {
             "-aiDisclaimerAccepted", "YES",
             "-deviceSafetyAccepted", "YES",
             "-hasSeenOnboarding", "YES",
+            "-hasChosenLanguage", "YES",
             "-uiLanguage", language,
             "-appearance", appearance
         ]

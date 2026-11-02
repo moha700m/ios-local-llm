@@ -52,12 +52,6 @@ struct SanadSplashView: View {
                     .foregroundStyle(SplashInk.mint.opacity(0.9))
                     .padding(.top, 10)
                     .opacity(settled ? 1 : 0)
-
-                Text("ذكاء خاص، على جهازك")
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundStyle(SplashInk.paper.opacity(0.62))
-                    .padding(.top, 22)
-                    .opacity(settled ? 1 : 0)
             }
             .opacity(leaving ? 0 : 1)
             .scaleEffect(leaving ? 1.02 : 1)

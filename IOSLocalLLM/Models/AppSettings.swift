@@ -243,6 +243,8 @@ final class AppSettings: ObservableObject {
     /// is still honoured for users who already chose it; new installs start
     /// Arabic so the app opens in the language most of its audience reads.
     @AppStorage("uiLanguage")              var uiLanguage: String = AppLanguage.arabic.rawValue
+    /// False until the first-launch language gate is answered.
+    @AppStorage("hasChosenLanguage")       var hasChosenLanguage: Bool = false
     /// Lens debug overlay: shows a thumbnail of the EXACT image MLX
     /// receives (post-orientation, post-resize) so we can verify the
     /// preprocessing pipeline visually instead of guessing why captions

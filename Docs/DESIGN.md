@@ -103,6 +103,10 @@ colour fields).
 
 ## Arabic and RTL
 
+- First launch opens a language gate (Arabic / English) before any other
+  screen; the answer is persisted in `hasChosenLanguage` and applied to the
+  whole process, including legacy screens, through `LocalizationBridge`.
+
 - Arabic is the default language (`AppSettings.uiLanguage`); English is one tap
   away in Settings.
 - The root applies `.environment(\.layoutDirection, ...)` and `.environment(\.locale, ...)`
