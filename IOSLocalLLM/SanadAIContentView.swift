@@ -69,7 +69,19 @@ struct SanadAIContentView: View {
         // state, keyboard avoidance and every existing deep-link path.
         .tint(T.accent)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            SanadTabBar(items: tabBarItems, selection: $selectedTab)
+            VStack(spacing: 0) {
+                // Content dissolves into the page before it reaches the bar;
+                // without this, list rows read through the glass.
+                LinearGradient(
+                    colors: [T.bg.opacity(0), T.bg.opacity(0.92)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 18)
+                .allowsHitTesting(false)
+
+                SanadTabBar(items: tabBarItems, selection: $selectedTab)
+            }
         }
         // Re-probe every model's on-disk state whenever the user lands on
         // either tab. Catches the common case where a download finished while

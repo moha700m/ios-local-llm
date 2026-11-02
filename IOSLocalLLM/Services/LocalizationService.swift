@@ -4091,6 +4091,19 @@ final class LocalizationService: ObservableObject, @unchecked Sendable {
         ("SD / SDXL diffusion via MLX. FLUX is too large for iOS memory.", "انتشار SD / SDXL عبر MLX. نموذج FLUX أكبر من ذاكرة iOS."),
         ("Stored only - runtime not implemented", "مخزّن فقط — البيئة غير منفذة"),
         ("gated", "محجوب"),
+        ("Explain this code step by step", "اشرح هذه الشيفرة خطوة بخطوة"),
+        ("Review a file for bugs", "راجع ملفاً بحثاً عن أخطاء"),
+        ("Help me plan an implementation", "ساعدني في تخطيط التنفيذ"),
+        ("No matching messages", "لا توجد رسائل مطابقة"),
+        ("Choose a model that fits", "اختر نموذجاً يناسب جهازك"),
+        ("What can I help you build?", "بماذا أقدر أساعدك؟"),
+        ("Try another word or close search to return to the conversation.", "جرّب كلمة أخرى أو أغلق البحث للعودة إلى المحادثة."),
+        ("The selected on-device model could not start.", "تعذّر تشغيل النموذج المحدد على الجهاز."),
+        ("The on-device model needs attention before you can start.", "النموذج على الجهاز يحتاج إلى إعداد قبل البدء."),
+        ("Your on-device model is getting ready.", "جارٍ تجهيز نموذجك على الجهاز."),
+        ("Explain code", "اشرح الشيفرة"),
+        ("Review a file", "راجع ملفاً"),
+        ("Plan a feature", "خطّط لميزة"),
     ]
 
     // MARK: - Korean translations

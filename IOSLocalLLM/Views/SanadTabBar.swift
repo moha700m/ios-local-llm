@@ -63,13 +63,17 @@ struct SanadTabBar<Tag: Hashable>: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 7)
         .background {
-            RoundedRectangle(cornerRadius: 27, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 27, style: .continuous)
-                        .strokeBorder(T.rule, lineWidth: 0.5)
-                }
-                .shadow(color: .black.opacity(T.isDark ? 0.45 : 0.10), radius: 22, y: 10)
+            ZStack {
+                RoundedRectangle(cornerRadius: 27, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                // A tinted base keeps scrolling copy from reading through the
+                // bar. Glass is the finish, not the whole surface.
+                RoundedRectangle(cornerRadius: 27, style: .continuous)
+                    .fill(T.bg.opacity(T.isDark ? 0.82 : 0.90))
+                RoundedRectangle(cornerRadius: 27, style: .continuous)
+                    .strokeBorder(T.rule, lineWidth: 0.5)
+            }
+            .shadow(color: .black.opacity(T.isDark ? 0.45 : 0.10), radius: 22, y: 10)
         }
         .padding(.horizontal, 18)
         .padding(.top, 6)

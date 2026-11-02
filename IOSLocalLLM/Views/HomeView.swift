@@ -58,7 +58,7 @@ struct HomeView: View {
     private var header: some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                Text(Date.now, format: .dateTime.weekday(.wide).day().month(.wide))
                     .font(T.sans(12, .medium))
                     .foregroundStyle(T.ink3)
                 HStack(spacing: 8) {
