@@ -239,7 +239,10 @@ final class AppSettings: ObservableObject {
     /// UI language override: "system" (follow device), "en", or "tr".
     /// Live-switchable via LocalizationService — see Settings → INTERFACE
     /// → language picker.
-    @AppStorage("uiLanguage")              var uiLanguage: String = "system"
+    /// Arabic is the product's first language. `.system` remains available and
+    /// is still honoured for users who already chose it; new installs start
+    /// Arabic so the app opens in the language most of its audience reads.
+    @AppStorage("uiLanguage")              var uiLanguage: String = AppLanguage.arabic.rawValue
     /// Lens debug overlay: shows a thumbnail of the EXACT image MLX
     /// receives (post-orientation, post-resize) so we can verify the
     /// preprocessing pipeline visually instead of guessing why captions

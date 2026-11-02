@@ -475,6 +475,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build/out
+          # Ship the declared entitlements next to the IPA. An unsigned archive
+          # carries no signature, so these keys are not embedded in the binary:
+          # whoever re-signs the IPA (ESign, Sideloadly, Xcode) must apply them
+          # for the increased-memory limit to take effect on device.
+          cp IOSLocalLLM/SanadAI.entitlements build/out/SanadAI.entitlements
+          cp IOSLocalLLMShareExtension/SanadAI.entitlements build/out/SanadAIShare.entitlements
           python3 - <<'PY'
           import hashlib
           import json
@@ -531,6 +537,7 @@ jobs:
             build/out/ipa-validation.txt
             build/out/ipa-contents.txt
             build/out/*.sha256
+            build/out/*.entitlements
             build-xcode-version.txt
           if-no-files-found: warn
           retention-days: 30
@@ -596,6 +603,7 @@ jobs:
             echo "| Version | ${MARKETING_VERSION} (${BUILD_NUMBER}) |"
             echo "| Signing | ${{ steps.signing.outputs.mode }} |"
             echo "| Tests | ${RUN_TESTS} |"
+            echo "| Memory entitlement | declared (granted only when the signing profile allows it) |"
             echo "| Commit | ${GITHUB_SHA} |"
             if [ -n "$ipa" ]; then
               echo "| IPA | \`$(basename "$ipa")\` |"

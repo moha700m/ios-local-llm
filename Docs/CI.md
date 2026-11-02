@@ -104,7 +104,7 @@ image does not already provide them, so the workflow tracks
 | Artifact | Contents | Retention |
 | --- | --- | --- |
 | `SanadAI-ipa-<run_number>` | `SanadAI-<version>-<build>-unsigned.ipa` or `...-signed.ipa` | 30 days |
-| `SanadAI-metadata-<run_number>` | `build-metadata.json`, `ipa-validation.txt`, `ipa-contents.txt`, `<ipa>.sha256`, `build-xcode-version.txt` | 30 days |
+| `SanadAI-metadata-<run_number>` | `build-metadata.json`, `ipa-validation.txt`, `ipa-contents.txt`, `<ipa>.sha256`, `SanadAI.entitlements`, `SanadAIShare.entitlements`, `build-xcode-version.txt` | 30 days |
 | `SanadAI-logs-<run_number>` | `archive.log`, `export.log`, `resolve-packages.log`, `tests.log`, `native-frameworks.log`, `pod-install.log` | 30 days |
 
 Download from the CLI:
@@ -125,8 +125,10 @@ other re-signing tool:
    `com.sanadai.app` and `com.sanadai.app.share`. The extension is signed as a
    nested plug-in; a profile that only covers the app bundle ID fails at
    install time.
-3. Keep the entitlements from `IOSLocalLLM/SanadAI.entitlements` and
-   `IOSLocalLLMShareExtension/SanadAI.entitlements`:
+3. Apply the entitlements shipped with the metadata artifact —
+   `SanadAI.entitlements` (app) and `SanadAIShare.entitlements` (extension).
+   ESign: **Signature → Entitlements → Import**, then enable App Groups.
+   Sideloadly: paste both files into the entitlements fields. They declare:
    `com.apple.security.application-groups` = `group.com.sanadai.shared`,
    `com.apple.developer.kernel.increased-memory-limit`, and
    `com.apple.developer.kernel.extended-virtual-addressing`.
@@ -146,6 +148,35 @@ Verify a downloaded IPA before installing:
 shasum -a 256 SanadAI-<version>-<build>-unsigned.ipa
 # compare with the value in build-metadata.json and the job summary
 ```
+
+## Memory entitlement on sideloaded builds
+
+An unsigned archive is not signed, so it carries **no entitlements at all**.
+Declaring the keys in `SanadAI.entitlements` only matters once a signing step
+copies them into the code signature. That is why a re-signed IPA can install
+and run while still reporting:
+
+> This installed build is missing the iOS Increased Memory Limit entitlement.
+
+Diagnose it inside the app: **Home → device strip → Memory entitlement**. The
+value comes from `SecTaskCopyValueForEntitlement` on the running process, not
+from the source plist, so it reflects what iOS actually granted.
+
+To grant it:
+
+1. The provisioning profile must include the Increased Memory Limit capability.
+   Free personal teams cannot issue it; a paid Apple Developer account is
+   required.
+2. The entitlements file must list `com.apple.developer.kernel.increased-memory-limit`
+   (and, for models above ~4 GB, `com.apple.developer.kernel.extended-virtual-addressing`).
+3. Re-sign both the app and `SanadAIShare.appex` with that profile. ESign applies
+   one entitlements file per signature, so import `SanadAI.entitlements` for the
+   app and `SanadAIShare.entitlements` for the extension.
+
+Without the entitlement the app still runs, but the per-process ceiling stays at
+the default iOS budget (roughly 2–3 GB on 6 GB devices). Models above that are
+blocked by `MemoryAdvisor` before loading, with a message that explains the
+shortfall instead of crashing the process.
 
 ## Signed builds
 

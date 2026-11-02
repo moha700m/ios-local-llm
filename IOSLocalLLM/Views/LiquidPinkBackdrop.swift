@@ -1,38 +1,76 @@
 import SwiftUI
 
 // MARK: - LiquidPinkBackdrop
-// Historical name retained for compatibility. This is backdrop content, not a
-// tint inside the glass: restrained detail gives the native material live
-// pixels to sample and makes its clarity/refraction visible in both modes.
+// Historical type name kept so every screen keeps one background entry point.
+// The artwork is now "Sanad Aura": a warm stone canvas with three slow colour
+// fields (mint, teal, sand) that give the clear-glass chrome real pixels to
+// refract. It is static by design — a decorative animation that never stops is
+// a battery tax on a screen the user leaves open.
 
 struct LiquidPinkBackdrop: View {
     @Environment(\.koduTheme) private var T
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         GeometryReader { proxy in
+            let w = proxy.size.width
+            let h = proxy.size.height
             ZStack {
                 T.bg
 
-                Circle()
-                    .fill(T.accent.opacity(T.isDark ? 0.18 : 0.10))
-                    .frame(width: proxy.size.width * 1.05)
-                    .blur(radius: 38)
-                    .offset(x: -proxy.size.width * 0.42, y: -proxy.size.height * 0.26)
+                if !reduceTransparency {
+                    // Mint field — anchors the top trailing corner.
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    T.accent.opacity(T.isDark ? 0.22 : 0.16),
+                                    T.accent.opacity(0.0),
+                                ],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: w * 0.9
+                            )
+                        )
+                        .frame(width: w * 1.6, height: w * 1.6)
+                        .offset(x: w * 0.46, y: -h * 0.30)
 
-                Circle()
-                    .fill(Color(red: 0.42, green: 0.78, blue: 0.72)
-                        .opacity(T.isDark ? 0.13 : 0.12))
-                    .frame(width: proxy.size.width * 0.86)
-                    .blur(radius: 46)
-                    .offset(x: proxy.size.width * 0.42, y: proxy.size.height * 0.04)
+                    // Cool teal field — balances the mint on the lower leading side.
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    Color(red: 0.16, green: 0.55, blue: 0.62)
+                                        .opacity(T.isDark ? 0.20 : 0.12),
+                                    .clear,
+                                ],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: w * 0.8
+                            )
+                        )
+                        .frame(width: w * 1.4, height: w * 1.4)
+                        .offset(x: -w * 0.55, y: h * 0.20)
 
-                RoundedRectangle(cornerRadius: 64, style: .continuous)
-                    .fill(Color(red: 0.72, green: 0.62, blue: 0.96)
-                        .opacity(T.isDark ? 0.12 : 0.10))
-                    .frame(width: proxy.size.width * 1.15, height: proxy.size.height * 0.34)
-                    .rotationEffect(.degrees(-18))
-                    .blur(radius: 52)
-                    .offset(x: proxy.size.width * 0.18, y: proxy.size.height * 0.39)
+                    // Warm sand field — the single non-green hue, kept faint.
+                    Ellipse()
+                        .fill(
+                            Color(red: 0.86, green: 0.70, blue: 0.46)
+                                .opacity(T.isDark ? 0.10 : 0.14)
+                        )
+                        .frame(width: w * 1.2, height: h * 0.42)
+                        .blur(radius: 70)
+                        .offset(x: w * 0.18, y: h * 0.40)
+
+                    // Hairline horizon — a quiet architectural cue near the top.
+                    LinearGradient(
+                        colors: [.clear, T.rule, .clear],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(height: 1)
+                    .offset(y: -h * 0.42)
+                }
             }
         }
         .ignoresSafeArea()

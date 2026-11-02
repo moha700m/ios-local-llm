@@ -63,89 +63,88 @@ struct KoduTheme {
     let roseDeep: Color      // inline code / deep edge of user bubble
     let accentStrong: Color  // primary CTA / active tab — deeper than `accent`
 
-    // MARK: - Light — neutral utility
+    // MARK: - Light — Sanad Paper
+    //
+    // Warm stone canvas, crisp near-opaque cards, deep emerald ink. The palette
+    // is deliberately quiet: one brand hue, three neutrals, no decorative tint.
     static let light = KoduTheme(
-        bg:        Color(red: 0.968, green: 0.976, blue: 0.992),  // airy pearl canvas
-        surface:   Color.white.opacity(0.26),
-        surface2:  Color.white.opacity(0.18),
-        surface3:  Color.white.opacity(0.10),
-        ink:       Color(red: 0.110, green: 0.110, blue: 0.118),  // #1C1C1E label
-        ink2:      Color(red: 0.427, green: 0.427, blue: 0.447),  // #6D6D72 secondary
-        ink3:      Color(red: 0.557, green: 0.557, blue: 0.576),  // #8E8E93 tertiary
-        ink4:      Color(red: 0.780, green: 0.780, blue: 0.800),  // #C7C7CC quaternary
-        rule:      Color.black.opacity(0.10),
-        rule2:     Color.black.opacity(0.18),
-        accent:    Color(red: 0.000, green: 0.478, blue: 1.000),  // system blue fallback
-        accentSoft:   Color(red: 0.000, green: 0.478, blue: 1.000).opacity(0.10),
-        accentSofter: Color(red: 0.000, green: 0.478, blue: 1.000).opacity(0.06),
-        good:      Color(red: 0.133, green: 0.545, blue: 0.302),
-        warn:      Color(red: 0.690, green: 0.424, blue: 0.047),
-        bad:       Color(red: 0.784, green: 0.118, blue: 0.196),
+        bg:        Color(red: 0.961, green: 0.969, blue: 0.953),  // #F5F7F3 stone
+        surface:   Color.white.opacity(0.78),
+        surface2:  Color.white.opacity(0.58),
+        surface3:  Color.white.opacity(0.36),
+        ink:       Color(red: 0.055, green: 0.078, blue: 0.071),  // #0E1412
+        ink2:      Color(red: 0.278, green: 0.322, blue: 0.302),  // #47524D
+        ink3:      Color(red: 0.424, green: 0.463, blue: 0.443),  // #6C7671
+        ink4:      Color(red: 0.647, green: 0.686, blue: 0.667),  // #A5AFAA
+        rule:      Color.black.opacity(0.075),
+        rule2:     Color.black.opacity(0.14),
+        accent:    Color(red: 0.055, green: 0.478, blue: 0.361),  // #0E7A5C
+        accentSoft:   Color(red: 0.055, green: 0.478, blue: 0.361).opacity(0.12),
+        accentSofter: Color(red: 0.055, green: 0.478, blue: 0.361).opacity(0.06),
+        good:      Color(red: 0.071, green: 0.502, blue: 0.361),
+        warn:      Color(red: 0.663, green: 0.416, blue: 0.071),
+        bad:       Color(red: 0.702, green: 0.149, blue: 0.118),
         pad: 16, gap: 10,
         isDark: false,
-        roseHi:       Color(red: 0.200, green: 0.560, blue: 1.000),
-        roseDeep:     Color(red: 0.000, green: 0.330, blue: 0.780),
-        accentStrong: Color(red: 0.000, green: 0.400, blue: 0.900)
+        roseHi:       Color(red: 0.086, green: 0.639, blue: 0.455), // #16A374
+        roseDeep:     Color(red: 0.039, green: 0.361, blue: 0.275), // #0A5C46
+        accentStrong: Color(red: 0.043, green: 0.420, blue: 0.318)  // #0B6B51
     )
 
-    // MARK: - Dark — neutral utility
+    // MARK: - Dark — Sanad Night
+    //
+    // Deep green-black canvas with mint accents. Cards are translucent whites
+    // so elevation reads without lifting the page off the dark base.
     static let dark = KoduTheme(
-        // Lift the canvas above black so clear glass reads as smoked crystal,
-        // while keeping enough depth for bright, fully opaque foreground ink.
-        bg:        Color(red: 0.140, green: 0.155, blue: 0.190),
-        surface:   Color.white.opacity(0.13),
-        surface2:  Color.white.opacity(0.18),
-        surface3:  Color.white.opacity(0.08),
-        ink:       Color(red: 0.929, green: 0.929, blue: 0.937),
-        ink2:      Color(red: 0.706, green: 0.706, blue: 0.729),
-        ink3:      Color(red: 0.510, green: 0.510, blue: 0.533),
-        ink4:      Color(red: 0.337, green: 0.337, blue: 0.357),
-        rule:      Color.white.opacity(0.15),
-        rule2:     Color.white.opacity(0.25),
-        accent:    Color(red: 0.220, green: 0.600, blue: 1.000),
-        accentSoft:   Color(red: 0.220, green: 0.600, blue: 1.000).opacity(0.16),
-        accentSofter: Color(red: 0.220, green: 0.600, blue: 1.000).opacity(0.09),
-        good:      Color(red: 0.392, green: 0.784, blue: 0.533),
-        warn:      Color(red: 0.898, green: 0.643, blue: 0.263),
-        bad:       Color(red: 0.902, green: 0.404, blue: 0.431),
+        bg:        Color(red: 0.043, green: 0.059, blue: 0.055),  // #0B0F0E
+        surface:   Color.white.opacity(0.075),
+        surface2:  Color.white.opacity(0.12),
+        surface3:  Color.white.opacity(0.05),
+        ink:       Color(red: 0.925, green: 0.945, blue: 0.933),  // #ECF1EE
+        ink2:      Color(red: 0.655, green: 0.698, blue: 0.675),  // #A7B2AC
+        ink3:      Color(red: 0.486, green: 0.529, blue: 0.506),  // #7C8781
+        ink4:      Color(red: 0.306, green: 0.345, blue: 0.322),  // #4E5852
+        rule:      Color.white.opacity(0.12),
+        rule2:     Color.white.opacity(0.20),
+        accent:    Color(red: 0.271, green: 0.890, blue: 0.651),  // #45E3A6
+        accentSoft:   Color(red: 0.271, green: 0.890, blue: 0.651).opacity(0.18),
+        accentSofter: Color(red: 0.271, green: 0.890, blue: 0.651).opacity(0.09),
+        good:      Color(red: 0.357, green: 0.890, blue: 0.651),
+        warn:      Color(red: 0.949, green: 0.753, blue: 0.388),
+        bad:       Color(red: 1.000, green: 0.541, blue: 0.502),
         pad: 16, gap: 10,
         isDark: true,
-        roseHi:       Color(red: 0.360, green: 0.660, blue: 1.000),
-        roseDeep:     Color(red: 0.040, green: 0.450, blue: 0.920),
-        accentStrong: Color(red: 0.220, green: 0.600, blue: 1.000)
+        roseHi:       Color(red: 0.220, green: 0.855, blue: 0.612), // #38DA9C
+        roseDeep:     Color(red: 0.106, green: 0.639, blue: 0.443), // #1BA371
+        accentStrong: Color(red: 0.169, green: 0.788, blue: 0.549)  // #2BC98C
     )
 
-    // MARK: - OLED Dark — Plum Dusk
+    // MARK: - OLED Dark — Sanad Black
     //
-    // Pure #000000 page so OLED pixels switch off (deeper blacks, less battery),
-    // with NEUTRAL grays for ink/surfaces instead of the warm mulberry of the
-    // standard dark theme — the readable, high-contrast look of a modern code
-    // editor. Surfaces are translucent whites over the black page, so cards/
-    // pills read as subtly elevated panels (≈#121212 / #212121) rather than
-    // pure black, keeping depth without lifting the page off true black.
+    // True #000000 page with neutral-warm ink and the same mint accent family.
     static let oled = KoduTheme(
-        bg:        Color(red: 0.004, green: 0.004, blue: 0.008),  // #010102 OLED black
-        surface:   Color.white.opacity(0.10),                     // clear elevated card
-        surface2:  Color.white.opacity(0.15),                     // clear glass highlight
-        surface3:  Color.white.opacity(0.06),                     // quiet glass layer
-        ink:       Color(red: 0.929, green: 0.929, blue: 0.937),  // #EDEDEF off-white (not harsh pure white)
-        ink2:      Color(red: 0.706, green: 0.706, blue: 0.729),  // #B4B4BA secondary
-        ink3:      Color(red: 0.510, green: 0.510, blue: 0.533),  // #828288 tertiary
-        ink4:      Color(red: 0.337, green: 0.337, blue: 0.357),  // #56565B quaternary
-        rule:      Color.white.opacity(0.09),
-        rule2:     Color.white.opacity(0.16),
-        accent:    Color(red: 0.769, green: 0.169, blue: 0.522),  // #C42B85
-        accentSoft:   Color(red: 0.643, green: 0.067, blue: 0.384).opacity(0.30),
-        accentSofter: Color(red: 0.643, green: 0.067, blue: 0.384).opacity(0.16),
-        good:      Color(red: 0.525, green: 1.000, blue: 0.753),  // #86FFC0
-        warn:      Color(red: 0.988, green: 0.827, blue: 0.302),  // #FCD34D
-        bad:       Color(red: 0.988, green: 0.647, blue: 0.647),  // #FCA5A5
+        bg:        Color.black,
+        surface:   Color.white.opacity(0.065),
+        surface2:  Color.white.opacity(0.11),
+        surface3:  Color.white.opacity(0.04),
+        ink:       Color(red: 0.933, green: 0.949, blue: 0.941),
+        ink2:      Color(red: 0.671, green: 0.710, blue: 0.690),
+        ink3:      Color(red: 0.510, green: 0.549, blue: 0.529),
+        ink4:      Color(red: 0.322, green: 0.357, blue: 0.337),
+        rule:      Color.white.opacity(0.10),
+        rule2:     Color.white.opacity(0.18),
+        accent:    Color(red: 0.290, green: 0.914, blue: 0.678),
+        accentSoft:   Color(red: 0.290, green: 0.914, blue: 0.678).opacity(0.16),
+        accentSofter: Color(red: 0.290, green: 0.914, blue: 0.678).opacity(0.08),
+        good:      Color(red: 0.357, green: 0.890, blue: 0.651),
+        warn:      Color(red: 0.949, green: 0.753, blue: 0.388),
+        bad:       Color(red: 1.000, green: 0.541, blue: 0.502),
         pad: 16, gap: 10,
         isDark: true,
         isOLED: true,
-        roseHi:       Color(red: 0.635, green: 0.071, blue: 0.400), // #A21266
-        roseDeep:     Color(red: 0.431, green: 0.043, blue: 0.275), // #6E0B46
-        accentStrong: Color(red: 0.431, green: 0.043, blue: 0.275)
+        roseHi:       Color(red: 0.220, green: 0.855, blue: 0.612),
+        roseDeep:     Color(red: 0.106, green: 0.639, blue: 0.443),
+        accentStrong: Color(red: 0.169, green: 0.788, blue: 0.549)
     )
 
     // MARK: - Accent palettes (theme combinations)
@@ -160,10 +159,11 @@ struct KoduTheme {
         // reserved for status). Listed first so it leads the Settings swatch
         // row. `system` (vivid iOS blue) and the rest stay selectable.
         // rawValues are persisted, so the order may change freely.
-        case onyx, system, rose, blue, violet, emerald, amber, graphite, teal, indigo, coral, magenta
+        case sanad, onyx, system, rose, blue, violet, emerald, amber, graphite, teal, indigo, coral, magenta
         var id: String { rawValue }
         var displayName: String {
             switch self {
+            case .sanad: return "Sanad"
             case .onyx: return "Onyx"
             case .system: return "System"
             case .rose: return "Rose"
@@ -193,6 +193,11 @@ struct KoduTheme {
         fileprivate func anchors(dark: Bool) -> (accent: Color, hi: Color, deep: Color, strong: Color) {
             func c(_ r: Double, _ g: Double, _ b: Double) -> Color { Color(red: r, green: g, blue: b) }
             switch self {
+            case .sanad:
+                // Deep emerald ink — the product's signature accent.
+                return dark
+                    ? (c(0.271,0.890,0.651), c(0.420,0.941,0.741), c(0.169,0.788,0.549), c(0.271,0.890,0.651))
+                    : (c(0.055,0.478,0.361), c(0.086,0.639,0.455), c(0.043,0.420,0.318), c(0.043,0.420,0.318))
             case .onyx:
                 // Near-black graphite monochrome — the ChatGPT-like default.
                 // Light: near-black accent/CTA (white text ~15:1). Dark: a
@@ -263,7 +268,7 @@ struct KoduTheme {
     /// The only app-facing accent for now. Keeping the palette implementation
     /// below makes it easy to restore user-selectable colors later without
     /// allowing an old persisted choice to override the current black theme.
-    static let appAccent: KoduAccent = .onyx
+    static let appAccent: KoduAccent = .sanad
 
     /// Build a theme for an appearance + accent palette. `appearance` is the
     /// stored string — "light", "dark", or "oled". `.rose` is the untouched

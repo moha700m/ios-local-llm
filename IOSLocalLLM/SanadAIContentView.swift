@@ -59,7 +59,14 @@ struct SanadAIContentView: View {
                 .tag(Tab.models)
                 .tabItem { Label("Models", systemImage: "cube.box") }
         }
+        // The system chrome is replaced by SanadTabBar below. Keeping the
+        // TabView (rather than hand-rolling a router) preserves selection
+        // state, keyboard avoidance and every existing deep-link path.
+        .toolbar(.hidden, for: .tabBar)
         .tint(T.accent)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            SanadTabBar(items: tabBarItems, selection: $selectedTab)
+        }
         // Re-probe every model's on-disk state whenever the user lands on
         // either tab. Catches the common case where a download finished while
         // the user was on the other tab — without this, the card kept showing
@@ -339,6 +346,16 @@ struct SanadAIContentView: View {
             isActive: selectedTab == .assistant,
             onClose: { selectedTab = .home }
         )
+    }
+
+    private var tabBarItems: [SanadTabItem<Tab>] {
+        [
+            .init(tag: .home, title: "home", symbol: "house"),
+            .init(tag: .assistant, title: "assistant", symbol: "bubble.left.and.text.bubble.right"),
+            .init(tag: .camera, title: "lens", symbol: "camera.viewfinder"),
+            .init(tag: .voice, title: "voice", symbol: "waveform"),
+            .init(tag: .models, title: "models", symbol: "square.stack.3d.up")
+        ]
     }
 
     private var homeTab: some View {

@@ -5,6 +5,7 @@ import SwiftUI
 @main
 struct SanadAIApp: App {
     @ObservedObject private var settings = AppSettings.shared
+    @ObservedObject private var loc = LocalizationService.shared
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @Environment(\.scenePhase) private var scenePhase
     @State private var isShowingSplash = true
@@ -47,7 +48,7 @@ struct SanadAIApp: App {
             // llama.cpp, and HF Search download paths.
             ConfettiOverlayView()
             if isShowingSplash {
-                PlumDuskSplashView {
+                SanadSplashView {
                     withAnimation(.easeOut(duration: 0.28)) {
                         isShowingSplash = false
                     }
@@ -112,6 +113,8 @@ struct SanadAIApp: App {
             appearance: settings.appearance,
             accent: KoduTheme.appAccent))
         .preferredColorScheme(settings.resolvedColorScheme)
+        .environment(\.layoutDirection, loc.isRTL ? .rightToLeft : .leftToRight)
+        .environment(\.locale, loc.locale)
         .koduScaledType()
     }
 }

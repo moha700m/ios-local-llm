@@ -891,7 +891,15 @@ enum MemoryAdvisor {
     ) -> String {
         let neededGB = Double(neededBytes) / 1_000_000_000
         let ceilingGB = Double(ceilingBytes) / 1_000_000_000
+        let arabic = LocalizationService.shared.resolvedLanguage == .arabic
         if runtime == .mlx, !hasIncreasedMemoryEntitlement {
+            if arabic {
+                return String(
+                    format: "هذا البناء لا يحمل صلاحية «حد الذاكرة الموسّع» (Increased Memory Limit). النموذج يحتاج نحو %.1f غ.ب، لكن iOS يمنح التطبيق نحو %.1f غ.ب فقط. أعد توقيع الـIPA بملف تعريف يمنح com.apple.developer.kernel.increased-memory-limit، أو اختر نموذجاً أصغر بصيغة MLX أو GGUF.",
+                    neededGB,
+                    ceilingGB
+                )
+            }
             return String(
                 format: "This installed build is missing the iOS Increased Memory Limit entitlement. The MLX model needs ~%.1f GB, but iOS currently grants this app only ~%.1f GB. Re-sign with a provisioning profile that grants com.apple.developer.kernel.increased-memory-limit, or choose a smaller MLX/GGUF model.",
                 neededGB,
@@ -899,8 +907,22 @@ enum MemoryAdvisor {
             )
         }
         if runtime == .mlx, lowMemoryEnabled {
+            if arabic {
+                return String(
+                    format: "هذا النموذج يحتاج نحو %.1f غ.ب، لكن التطبيق يستطيع استخدام نحو %.1f غ.ب على هذا الجهاز. وضع الذاكرة المنخفضة لا يستطيع ترحيل أوزان MLX. اختر نموذجاً أصغر (4B أو 1.7B)، أو استورد نسخة GGUF مكمّمة لتعمل من التخزين.",
+                    neededGB,
+                    ceilingGB
+                )
+            }
             return String(
                 format: "This MLX model needs ~%.1f GB, but this app can use ~%.1f GB on this device. Low-memory mode cannot page MLX weights. Choose a smaller MLX model (4B or 1.7B), or import a GGUF quantization for storage-backed paging.",
+                neededGB,
+                ceilingGB
+            )
+        }
+        if arabic {
+            return String(
+                format: "هذا النموذج أكبر من قدرة الجهاز (يحتاج نحو %.1f غ.ب، والحد المتاح للتطبيق نحو %.1f غ.ب). اختر نموذجاً أصغر — مقاس 4B أو 1.7B يعمل بارتياح.",
                 neededGB,
                 ceilingGB
             )

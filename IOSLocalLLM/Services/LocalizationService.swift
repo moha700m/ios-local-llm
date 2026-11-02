@@ -135,27 +135,50 @@ final class LocalizationService: ObservableObject, @unchecked Sendable {
     /// Falls back to the English source if no translation is registered,
     /// so the UI never goes blank for a missing key. Safe to call from
     /// any thread — reads an immutable lookup table.
+    /// The language actually in effect, with `.system` resolved against the
+    /// device's preferred languages. Single source of truth for `t(_:)`, the
+    /// RTL layout direction, and locale-aware number/date formatting.
+    var resolvedLanguage: AppLanguage {
+        guard language == .system else { return language }
+        let preferred = Locale.preferredLanguages.first ?? "en"
+        if preferred.hasPrefix("de") { return .german }
+        if preferred.hasPrefix("fr") { return .french }
+        if preferred.hasPrefix("es") { return .spanish }
+        if preferred.hasPrefix("pt") { return .portuguese }
+        if preferred.hasPrefix("it") { return .italian }
+        if preferred.hasPrefix("el") { return .greek }
+        if preferred.hasPrefix("ro") { return .romanian }
+        if preferred.hasPrefix("ru") { return .russian }
+        if preferred.hasPrefix("tr") { return .turkish }
+        if preferred.hasPrefix("ar") { return .arabic }
+        if preferred.hasPrefix("hi") { return .hindi }
+        if preferred.hasPrefix("zh") { return .chinese }
+        if preferred.hasPrefix("ja") { return .japanese }
+        if preferred.hasPrefix("ko") { return .korean }
+        return .english
+    }
+
+    /// True when the active language reads right-to-left. Drives the root
+    /// `.layoutDirection` environment value; every SwiftUI layout, chevron and
+    /// horizontal stack flips with it.
+    var isRTL: Bool { resolvedLanguage == .arabic }
+
+    /// Locale for `Text` formatting (dates, numbers, relative times). Keeping
+    /// it in sync with the in-app picker is what makes the UI read natively
+    /// instead of showing English month names inside an Arabic screen.
+    var locale: Locale {
+        switch resolvedLanguage {
+        case .system, .english: return Locale(identifier: "en")
+        default: return Locale(identifier: resolvedLanguage.rawValue)
+        }
+    }
+
+    /// Resolves an English source string to the user's chosen language.
+    /// Falls back to the English source if no translation is registered,
+    /// so the UI never goes blank for a missing key. Safe to call from
+    /// any thread — reads an immutable lookup table.
     func t(_ key: String) -> String {
-        let effective: AppLanguage = {
-            if language != .system { return language }
-            let preferred = Locale.preferredLanguages.first ?? "en"
-            if preferred.hasPrefix("de") { return .german }
-            if preferred.hasPrefix("fr") { return .french }
-            if preferred.hasPrefix("es") { return .spanish }
-            if preferred.hasPrefix("pt") { return .portuguese }
-            if preferred.hasPrefix("it") { return .italian }
-            if preferred.hasPrefix("el") { return .greek }
-            if preferred.hasPrefix("ro") { return .romanian }
-            if preferred.hasPrefix("ru") { return .russian }
-            if preferred.hasPrefix("tr") { return .turkish }
-            if preferred.hasPrefix("ar") { return .arabic }
-            if preferred.hasPrefix("hi") { return .hindi }
-            if preferred.hasPrefix("zh") { return .chinese }
-            if preferred.hasPrefix("ja") { return .japanese }
-            if preferred.hasPrefix("ko") { return .korean }
-            return .english
-        }()
-        switch effective {
+        switch resolvedLanguage {
         case .english, .system: return key
         case .german:           return Self.de[key] ?? key
         case .french:           return Self.fr[key] ?? key
@@ -3747,6 +3770,67 @@ final class LocalizationService: ObservableObject, @unchecked Sendable {
         ("Right model isn't ready. Pick another.", "النموذج الأيمن غير جاهز. اختر آخر."),
         ("Pick model", "اختر النموذج"),
         ("العربية", "العربية"),
+        ("home", "الرئيسية"),
+        ("settings", "الإعدادات"),
+        ("How can I help?", "كيف أقدر أساعدك؟"),
+        ("New chat", "محادثة جديدة"),
+        ("replies stay on your iPhone", "الردود تبقى على جهازك"),
+        ("Assistant is ready", "سند جاهز"),
+        ("Assistant is thinking…", "سند يفكّر…"),
+        ("Preparing model…", "جارٍ تجهيز النموذج…"),
+        ("On-device", "على الجهاز"),
+        ("Model needs setup", "النموذج يحتاج إعداداً"),
+        ("Memory entitlement", "صلاحية الذاكرة"),
+        ("Granted", "ممنوحة"),
+        ("Not granted", "غير ممنوحة"),
+        ("App memory limit", "حد ذاكرة التطبيق"),
+        ("Models above ~2 GB may not load. Re-sign with a profile that grants the increased-memory entitlement.", "النماذج الأكبر من ~2 غيغابايت قد لا تعمل. أعد التوقيع بملف تعريف يمنح صلاحية الذاكرة الموسّعة."),
+        ("Tools", "الأدوات"),
+        ("Read the world", "اقرأ ما حولك"),
+        ("Hands-free chat", "محادثة بدون يدين"),
+        ("Mac bridge", "ربط Mac"),
+        ("Pair a Mac", "اربط جهازك"),
+        ("Images", "الصور"),
+        ("Generate offline", "توليد بلا إنترنت"),
+        ("Active model", "النموذج النشط"),
+        ("Manage", "إدارة"),
+        ("Recent", "الأخيرة"),
+        ("Private by design. Nothing leaves this iPhone.", "خصوصية بالتصميم. لا شيء يخرج من جهازك."),
+        ("Good morning", "صباح الخير"),
+        ("Good afternoon", "طاب مساؤك"),
+        ("Good evening", "مساء الخير"),
+        ("Cancel", "إلغاء"),
+        ("Done", "تم"),
+        ("Close", "إغلاق"),
+        ("Delete", "حذف"),
+        ("Save", "حفظ"),
+        ("Search", "بحث"),
+        ("Retry", "إعادة المحاولة"),
+        ("Download", "تنزيل"),
+        ("Downloading", "جارٍ التنزيل"),
+        ("Installed", "مثبّت"),
+        ("Active", "نشط"),
+        ("Settings", "الإعدادات"),
+        ("Language", "اللغة"),
+        ("Appearance", "المظهر"),
+        ("About", "حول"),
+        ("Storage", "التخزين"),
+        ("Memory", "الذاكرة"),
+        ("Chat", "محادثة"),
+        ("Send", "إرسال"),
+        ("Stop", "إيقاف"),
+        ("Copy", "نسخ"),
+        ("Share", "مشاركة"),
+        ("Rename", "إعادة تسمية"),
+        ("Model", "النموذج"),
+        ("Models", "النماذج"),
+        ("Home", "الرئيسية"),
+        ("Assistant", "المساعد"),
+        ("Lens", "العدسة"),
+        ("Voice", "الصوت"),
+        ("Continue", "متابعة"),
+        ("Next", "التالي"),
+        ("Back", "رجوع"),
     ]
 
     // MARK: - Korean translations

@@ -1,18 +1,14 @@
 import SwiftUI
 
 // MARK: - HomeView
-// Dashboard / on-device status — design screen 01 ("Home") from the Local AI
-// Studio handoff, rebuilt in the app's KoduTheme so it honours the selected
-// accent palette and light/dark appearance.
+// The landing surface. One job: answer "what can I do right now?" in a single
+// screen — start a conversation, check the device, reach a tool, resume work.
 //
-// This is the landing tab. It is the ONLY place that reaches Settings and the
-// Models hub now that neither is a bottom tab:
-//   • the avatar / gear button (top-right) opens Settings,
-//   • the "Models" quick action and the "Manage" pill open the Models hub.
-// Lens / Voice quick actions switch to those bottom tabs.
-//
-// All callbacks are injected by ContentView so this view stays navigation-free
-// and testable.
+// Layout is intentionally editorial: a wordmark header, one hero composer,
+// a device health strip, a 2×2 tool grid, the active model, then recents.
+// Every string routes through LocalizationService so the screen flips to
+// Arabic (RTL) without a relaunch.
+
 struct HomeView: View {
     @Environment(\.koduTheme) private var T
     @ObservedObject private var assistant = CodingAssistantService.shared
@@ -39,222 +35,354 @@ struct HomeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
+            VStack(spacing: 14) {
                 header
-                heroCard
-                quickActions
-                imageGenerationCard
+                askCard
+                deviceStrip
+                toolsGrid
+                activeModelCard
                 recentSection
-                privacyCard
+                footer
             }
             .padding(.horizontal, 18)
-            .padding(.top, 8)
-            .padding(.bottom, 28)
+            .padding(.top, 6)
+            .padding(.bottom, 26)
         }
         .background(LiquidPinkBackdrop())
         .scrollIndicators(.hidden)
     }
 
-    // MARK: Header — greeting + avatar/settings
+    // MARK: Header
 
     private var header: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(greeting.uppercased())
-                    .font(T.sans(13, .semibold))
-                    .tracking(0)
-                    .foregroundColor(T.ink3)
-                Text("Studio")
-                    .font(T.display(30, .semibold))
-                    .foregroundColor(T.ink)
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                    .font(T.sans(12, .medium))
+                    .foregroundStyle(T.ink3)
+                HStack(spacing: 8) {
+                    Text("سند")
+                        .font(T.display(30, .semibold))
+                        .foregroundStyle(T.ink)
+                    Text("SANAD")
+                        .font(T.mono(9, .medium))
+                        .tracking(2.4)
+                        .foregroundStyle(T.accent)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(T.accentSoft, in: Capsule())
+                        .offset(y: 2)
+                }
             }
-            Spacer()
+            Spacer(minLength: 0)
             Button(action: { HapticManager.impact(.light); onOpenSettings() }) {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(T.ink2)
-                    .frame(width: 40, height: 40)
-                    .kClearGlass(
-                        in: Circle(),
-                        interactive: true,
-                        fallbackFill: T.surface,
-                        fallbackStroke: T.rule
-                    )
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(T.ink)
+                    .frame(width: 42, height: 42)
+                    .background(T.surface2, in: Circle())
+                    .overlay(Circle().strokeBorder(T.rule, lineWidth: 0.5))
             }
             .buttonStyle(.plain)
             .accessibilityLabel(loc.t("settings"))
         }
-        .padding(.top, 6)
+        .padding(.top, 4)
     }
 
-    // MARK: Hero — assistant ready
+    // MARK: Hero — ask Sanad
 
-    private var heroState: (dot: Color, title: String) {
-        switch assistant.state {
-        case .ready:      return (T.good, loc.t("Assistant is ready"))
-        case .generating: return (T.good, loc.t("Assistant is thinking…"))
-        case .loading:    return (T.warn, loc.t("Preparing model…"))
-        case .failed(let e):
-            // A cancelled load (tab switch, memory pressure) isn't a real
-            // failure — present it as the calm idle state, not an alarm.
-            if e.localizedCaseInsensitiveContains("cancel") {
-                return (T.ink3, loc.t("Tap New chat to start"))
+    private var askCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 7) {
+                Circle()
+                    .fill(stateDot)
+                    .frame(width: 6, height: 6)
+                Text(loc.t(stateLabel))
+                    .font(T.sans(11, .semibold))
+                    .foregroundStyle(T.ink3)
+                Spacer(minLength: 0)
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(T.ink4)
             }
-            return (T.bad, loc.t("Model needs setup"))
-        case .unloaded:
-            return downloadInProgress
-                ? (T.warn, loc.t("Preparing model…"))
-                : (T.ink3, loc.t("Tap New chat to start"))
+
+            Text(loc.t("How can I help?"))
+                .font(T.display(27, .semibold))
+                .foregroundStyle(T.ink)
+                .padding(.top, 14)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(subtitle)
+                .font(T.sans(14))
+                .foregroundStyle(T.ink2)
+                .padding(.top, 4)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button(action: { HapticManager.impact(.medium); onNewChat() }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text(loc.t("New chat"))
+                        .font(T.sans(15, .semibold))
+                    Spacer(minLength: 0)
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 12, weight: .bold))
+                        .frame(width: 26, height: 26)
+                        .background(Color.white.opacity(0.18), in: Circle())
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 15)
+                .frame(height: 52)
+                .frame(maxWidth: .infinity)
+                .background(
+                    LinearGradient(
+                        colors: [T.roseHi, T.accentStrong],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.16), lineWidth: 0.5)
+                )
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 18)
+
+            HStack(spacing: 8) {
+                Button(action: { HapticManager.impact(.light); onOpenVoice() }) {
+                    Label(loc.t("voice"), systemImage: "waveform")
+                        .font(T.sans(12.5, .medium))
+                        .foregroundStyle(T.ink)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(T.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .strokeBorder(T.rule, lineWidth: 0.5)
+                        )
+                }
+                .buttonStyle(.plain)
+
+                Button(action: { HapticManager.impact(.light); onOpenLens() }) {
+                    Label(loc.t("lens"), systemImage: "camera.viewfinder")
+                        .font(T.sans(12.5, .medium))
+                        .foregroundStyle(T.ink)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(T.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .strokeBorder(T.rule, lineWidth: 0.5)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, 10)
+        }
+        .padding(20)
+        .background(card(24))
+    }
+
+    private var stateDot: Color {
+        switch assistant.state {
+        case .ready, .generating: return T.good
+        case .loading:            return T.warn
+        case .failed(let e):
+            return e.localizedCaseInsensitiveContains("cancel") ? T.ink3 : T.bad
+        case .unloaded:           return downloadInProgress ? T.warn : T.ink3
         }
     }
 
-    /// Subtitle under the hero title — shows the live load progress / error
-    /// while preparing or failed, otherwise the model name + privacy tagline.
-    private var heroSubtitle: String {
+    private var stateLabel: String {
+        switch assistant.state {
+        case .ready:      return "Assistant is ready"
+        case .generating: return "Assistant is thinking…"
+        case .loading:    return "Preparing model…"
+        case .failed(let e):
+            return e.localizedCaseInsensitiveContains("cancel") ? "On-device" : "Model needs setup"
+        case .unloaded:   return downloadInProgress ? "Preparing model…" : "On-device"
+        }
+    }
+
+    private var subtitle: String {
         if case .loading(let m) = assistant.state, !m.isEmpty { return m }
         if case .failed(let e) = assistant.state, !e.isEmpty,
            !e.localizedCaseInsensitiveContains("cancel") { return e }
-        return "\(assistant.activeModel.displayName) — \(loc.t("replies stay on your iPhone"))"
+        return "\(assistant.activeModel.displayName) · \(loc.t("replies stay on your iPhone"))"
     }
 
-    /// True while any model is actively downloading — so the hero reads
-    /// "Preparing…" instead of a misleading "ready"/idle state.
     private var downloadInProgress: Bool {
-        center.models.contains { m in
-            switch m.state {
+        center.models.contains { model in
+            switch model.state {
             case .downloading, .enumerating: return true
             default: return false
             }
         }
     }
 
-    private var heroCard: some View {
-        let state = heroState
-        return VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
-                Circle().fill(state.dot)
-                    .frame(width: 7, height: 7)
-                Text(loc.t("Running on-device").uppercased())
-                    .font(T.sans(12, .bold)).tracking(0)
-                    .foregroundColor(T.ink3)
-                Spacer()
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(T.ink3)
-            }
-            Text(state.title)
-                .font(T.display(22, .semibold))
-                .foregroundColor(T.ink)
-                .padding(.top, 13)
-            Text(heroSubtitle)
-                .font(T.sans(14))
-                .foregroundColor(T.ink2)
-                .padding(.top, 3)
-                .fixedSize(horizontal: false, vertical: true)
+    // MARK: Device strip
 
-            HStack(spacing: 10) {
-                Button(action: { HapticManager.impact(.medium); onNewChat() }) {
-                    Text(loc.t("New chat"))
-                        .font(T.sans(15, .semibold))
-                        .foregroundColor(T.accentStrong)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .kClearGlass(
-                            in: RoundedRectangle(cornerRadius: 12, style: .continuous),
-                            tint: T.accentStrong.opacity(0.26),
-                            interactive: true,
-                            fallbackFill: T.accentStrong,
-                            fallbackStroke: T.accent.opacity(0.35)
-                        )
-                }
-                .buttonStyle(.plain)
-                Button(action: { HapticManager.impact(.light); onOpenVoice() }) {
-                    Image(systemName: "mic.fill")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(T.ink)
-                        .frame(width: 48, height: 46)
-                        .kClearGlass(
-                            in: RoundedRectangle(cornerRadius: 12, style: .continuous),
-                            interactive: true,
-                            fallbackFill: T.surface2,
-                            fallbackStroke: T.rule
-                        )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(loc.t("voice"))
+    private var entitlementGranted: Bool {
+        MemoryAdvisor.hasIncreasedMemoryLimitEntitlement
+    }
+
+    private var deviceStrip: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                statTile(
+                    symbol: entitlementGranted ? "checkmark.seal.fill" : "exclamationmark.triangle.fill",
+                    value: entitlementGranted ? loc.t("Granted") : loc.t("Not granted"),
+                    label: loc.t("Memory entitlement"),
+                    tint: entitlementGranted ? T.good : T.warn
+                )
+                divider
+                statTile(
+                    symbol: "memorychip",
+                    value: byteString(MemoryAdvisor.processMemoryCeiling),
+                    label: loc.t("App memory limit"),
+                    tint: T.ink2
+                )
+                divider
+                statTile(
+                    symbol: "internaldrive",
+                    value: byteString(center.totalStorageUsed),
+                    label: "\(center.models.filter(\.isReady).count) \(loc.t("models"))",
+                    tint: T.ink2
+                )
             }
-            .padding(.top, 18)
+            .padding(.vertical, 14)
+            .padding(.horizontal, 8)
+
+            if !entitlementGranted {
+                HStack(spacing: 8) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(T.warn)
+                    Text(loc.t("Models above ~2 GB may not load. Re-sign with a profile that grants the increased-memory entitlement."))
+                        .font(T.sans(11.5))
+                        .foregroundStyle(T.ink2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 13)
+            }
         }
-        .padding(20)
         .background(card(20))
     }
 
-    // MARK: Quick actions
+    private var divider: some View {
+        Rectangle()
+            .fill(T.rule)
+            .frame(width: 0.5, height: 30)
+    }
 
-    private var quickActions: some View {
-        HStack(spacing: 12) {
-            quickAction(icon: "camera.viewfinder", label: loc.t("lens"), action: onOpenLens)
-            quickAction(icon: "waveform", label: loc.t("voice"), action: onOpenVoice)
-            quickAction(icon: "desktopcomputer", label: loc.t("mac"), action: onOpenMac)
+    private func statTile(symbol: String, value: String, label: String, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(tint)
+            Text(value)
+                .font(T.sans(15, .semibold))
+                .foregroundStyle(T.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text(label)
+                .font(T.sans(10.5))
+                .foregroundStyle(T.ink3)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: Tools
+
+    private var toolsGrid: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            sectionLabel(loc.t("Tools"))
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
+                      spacing: 10) {
+                toolTile(loc.t("Lens"), loc.t("Read the world"), "camera.viewfinder", T.accent, onOpenLens)
+                toolTile(loc.t("Voice"), loc.t("Hands-free chat"), "waveform", T.voiceTint, onOpenVoice)
+                toolTile(loc.t("Mac bridge"), loc.t("Pair a Mac"), "desktopcomputer", T.imageTint, onOpenMac)
+                toolTile(loc.t("Images"), loc.t("Generate offline"), "wand.and.stars", T.accent2, onGenerateImage)
+            }
         }
     }
 
-    private func quickAction(icon: String, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: { HapticManager.impact(.light); action() }) {
-            VStack(spacing: 9) {
-                ZStack {
-                    Image(systemName: icon)
-                        .font(.system(size: 20, weight: .regular))
-                        .foregroundColor(T.ink2)
+    private func toolTile(_ title: String,
+                          _ subtitle: String,
+                          _ symbol: String,
+                          _ tint: Color,
+                          _ action: @escaping () -> Void) -> some View {
+        Button {
+            HapticManager.impact(.light)
+            action()
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                Image(systemName: symbol)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(tint)
+                    .frame(width: 34, height: 34)
+                    .background(tint.opacity(T.isDark ? 0.18 : 0.12),
+                                in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(T.sans(14, .semibold))
+                        .foregroundStyle(T.ink)
+                    Text(subtitle)
+                        .font(T.sans(11.5))
+                        .foregroundStyle(T.ink3)
+                        .lineLimit(1)
                 }
-                .frame(width: 40, height: 40)
-                .kGlass(cornerRadius: 8, fallbackFill: T.surface2)
-                Text(label)
-                    .font(T.sans(12.5, .semibold))
-                    .foregroundColor(T.ink)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
             .background(card(18))
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
         .buttonStyle(.plain)
     }
 
-    private var imageGenerationCard: some View {
-        Button {
-            HapticManager.impact(.medium)
-            onGenerateImage()
-        } label: {
-            HStack(spacing: 13) {
-                Image(systemName: "wand.and.stars")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 42, height: 42)
-                    .background(T.accentStrong, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    // MARK: Active model
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Generate an Image")
-                        .font(.headline)
-                        .foregroundStyle(T.ink)
-                    Text("Create images privately with on-device models")
-                        .font(.subheadline)
-                        .foregroundStyle(T.ink2)
-                        .multilineTextAlignment(.leading)
-                }
+    private var activeModelCard: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(T.accentSoft)
+                Image(systemName: "cube.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(T.accent)
+            }
+            .frame(width: 40, height: 40)
 
-                Spacer(minLength: 8)
-
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(assistant.activeModel.displayName)
+                    .font(T.sans(14, .semibold))
+                    .foregroundStyle(T.ink)
+                    .lineLimit(1)
+                Text(loc.t("Active model"))
+                    .font(T.sans(11.5))
                     .foregroundStyle(T.ink3)
             }
-            .padding(15)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(card(20))
-            .contentShape(Rectangle())
+            Spacer(minLength: 6)
+            Button(action: { HapticManager.impact(.light); onOpenModels() }) {
+                Text(loc.t("Manage"))
+                    .font(T.sans(12.5, .semibold))
+                    .foregroundStyle(T.ink)
+                    .padding(.horizontal, 13)
+                    .frame(height: 32)
+                    .background(T.surface2, in: Capsule())
+                    .overlay(Capsule().strokeBorder(T.rule, lineWidth: 0.5))
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
-        .accessibilityHint("Opens the on-device image generation studio")
+        .padding(14)
+        .background(card(20))
     }
 
     // MARK: Recent
@@ -264,26 +392,30 @@ struct HomeView: View {
             .sorted { $0.updatedAt > $1.updatedAt }
             .prefix(3))
         return VStack(alignment: .leading, spacing: 9) {
-                Text(loc.t("Recent").uppercased())
-                .font(T.sans(13, .semibold)).tracking(0)
-                .foregroundColor(T.ink2)
-                .padding(.leading, 4)
-                .padding(.top, 4)
+            sectionLabel(loc.t("Recent"))
 
             if recent.isEmpty {
                 HStack(spacing: 12) {
-                    iconTile("message", tint: T.accent)
+                    Image(systemName: "bubble.left")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(T.ink3)
+                        .frame(width: 34, height: 34)
+                        .background(T.surface2, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     Text(loc.t("No recent activity yet"))
-                        .font(T.sans(15)).foregroundColor(T.ink3)
-                    Spacer()
+                        .font(T.sans(13.5))
+                        .foregroundStyle(T.ink3)
+                    Spacer(minLength: 0)
                 }
                 .padding(14)
-                .background(card(20))
+                .background(card(18))
             } else {
                 VStack(spacing: 0) {
-                    ForEach(Array(recent.enumerated()), id: \.element.id) { idx, convo in
-                        Button(action: { HapticManager.impact(.light); onOpenConversation(convo) }) {
-                            recentRow(convo, isLast: idx == recent.count - 1)
+                    ForEach(Array(recent.enumerated()), id: \.element.id) { index, convo in
+                        Button {
+                            HapticManager.impact(.light)
+                            onOpenConversation(convo)
+                        } label: {
+                            recentRow(convo, isLast: index == recent.count - 1)
                         }
                         .buttonStyle(.plain)
                     }
@@ -295,68 +427,58 @@ struct HomeView: View {
 
     private func recentRow(_ convo: StoredConversation, isLast: Bool) -> some View {
         HStack(spacing: 12) {
-            iconTile("message", tint: T.accent)
-            VStack(alignment: .leading, spacing: 1) {
+            Image(systemName: "bubble.left")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(T.accent)
+                .frame(width: 32, height: 32)
+                .background(T.accentSoft, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
                 Text(convo.title.isEmpty ? loc.t("Untitled chat") : convo.title)
-                    .font(T.sans(15, .medium)).foregroundColor(T.ink)
+                    .font(T.sans(14, .medium))
+                    .foregroundStyle(T.ink)
                     .lineLimit(1)
-                Text("\(loc.t("assistant")) · \(Self.relative(convo.updatedAt))")
-                    .font(T.sans(12.5)).foregroundColor(T.ink3)
+                Text(Self.relative(convo.updatedAt))
+                    .font(T.sans(11.5))
+                    .foregroundStyle(T.ink3)
             }
             Spacer(minLength: 6)
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(T.ink4)
+            Image(systemName: "chevron.forward")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(T.ink4)
         }
-        .padding(.horizontal, 15)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
         .overlay(alignment: .bottom) {
-            if !isLast { Rectangle().fill(T.rule).frame(height: 0.5).padding(.leading, 59) }
+            if !isLast {
+                Rectangle().fill(T.rule).frame(height: 0.5).padding(.leading, 58)
+            }
         }
         .contentShape(Rectangle())
     }
 
-    // MARK: Privacy / manage
+    // MARK: Footer
 
-    private var privacyCard: some View {
-        let readyCount = center.models.filter { $0.isReady }.count
-        return HStack(spacing: 13) {
-            iconTile("lock.fill", tint: T.accent, filledTile: true)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(loc.t("Private by design"))
-                    .font(T.sans(15, .semibold)).foregroundColor(T.ink)
-                Text("\(readyCount) \(loc.t("models")) · \(Self.bytes(center.totalStorageUsed)) \(loc.t("on this iPhone"))")
-                    .font(T.sans(12.5)).foregroundColor(T.ink3)
-            }
-            Spacer(minLength: 6)
-            Button(action: { HapticManager.impact(.light); onOpenModels() }) {
-                Text(loc.t("Manage"))
-                    .font(T.sans(13, .semibold)).foregroundColor(T.ink)
-                    .padding(.horizontal, 13).padding(.vertical, 7)
-                    .kClearGlass(
-                        in: Capsule(),
-                        interactive: true,
-                        fallbackFill: T.surface2,
-                        fallbackStroke: T.rule
-                    )
-            }
-            .buttonStyle(.plain)
+    private var footer: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "lock.shield")
+                .font(.system(size: 11, weight: .medium))
+            Text(loc.t("Private by design. Nothing leaves this iPhone."))
+                .font(T.sans(11))
+                .multilineTextAlignment(.center)
         }
-        .padding(15)
-        .background(card(20))
+        .foregroundStyle(T.ink3)
+        .padding(.top, 4)
     }
 
-    // MARK: Reusable bits
+    // MARK: Bits
 
-    private func iconTile(_ symbol: String, tint: Color, filledTile: Bool = false) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: filledTile ? 11 : 9, style: .continuous)
-                .fill(filledTile ? AnyShapeStyle(T.accentStrong) : AnyShapeStyle(T.surface2))
-            Image(systemName: symbol)
-                .font(.system(size: filledTile ? 18 : 16, weight: .regular))
-                .foregroundColor(filledTile ? .white : T.ink2)
-        }
-        .frame(width: filledTile ? 38 : 32, height: filledTile ? 38 : 32)
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(T.sans(11, .semibold))
+            .tracking(1.2)
+            .foregroundStyle(T.ink3)
+            .padding(.leading, 2)
     }
 
     private func card(_ radius: CGFloat) -> some View {
@@ -368,26 +490,18 @@ struct HomeView: View {
             )
     }
 
-    private var greeting: String {
-        let h = Calendar.current.component(.hour, from: Date())
-        switch h {
-        case 5..<12:  return loc.t("Good morning")
-        case 12..<18: return loc.t("Good afternoon")
-        default:      return loc.t("Good evening")
-        }
-    }
-
     private static func relative(_ date: Date) -> String {
-        let f = RelativeDateTimeFormatter()
-        f.unitsStyle = .abbreviated
-        return f.localizedString(for: date, relativeTo: Date())
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: date, relativeTo: Date())
     }
 
-    private static func bytes(_ n: Int64) -> String {
-        guard n > 0 else { return "0 MB" }
-        let f = ByteCountFormatter()
-        f.countStyle = .file
-        f.allowedUnits = n >= 1_000_000_000 ? [.useGB] : [.useMB]
-        return f.string(fromByteCount: n)
+    private static func byteString(_ bytes: Int64) -> String {
+        guard bytes > 0 else { return "—" }
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .memory
+        formatter.allowedUnits = bytes >= 1_000_000_000 ? [.useGB] : [.useMB]
+        formatter.allowsNonnumericFormatting = false
+        return formatter.string(fromByteCount: bytes)
     }
 }
