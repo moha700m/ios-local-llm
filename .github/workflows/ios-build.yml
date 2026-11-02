@@ -10,6 +10,7 @@ on:
       - "IOSLocalLLM/**"
       - "IOSLocalLLMShareExtension/**"
       - "IOSLocalLLMTests/**"
+      - "IOSLocalLLMUITests/**"
       - "Packages/**"
       - "Patches/**"
       - "ThirdParty/**"
