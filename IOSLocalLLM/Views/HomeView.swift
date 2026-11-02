@@ -15,6 +15,7 @@ struct HomeView: View {
     @ObservedObject private var center = ModelDownloadCenter.shared
     @ObservedObject private var convos = ConversationStore.shared
     @ObservedObject private var loc = LocalizationService.shared
+    @State private var showMemoryHelp = false
 
     /// Start a fresh chat (→ Assistant tab).
     var onNewChat: () -> Void
@@ -229,6 +230,10 @@ struct HomeView: View {
     }
 
     private var deviceStrip: some View {
+        Button {
+            HapticManager.impact(.light)
+            showMemoryHelp = true
+        } label: {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 statTile(
@@ -271,6 +276,10 @@ struct HomeView: View {
             }
         }
         .background(card(20))
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(loc.t("Explains the memory entitlement and how to grant it."))
+        .sheet(isPresented: $showMemoryHelp) { SanadMemoryHelpSheet() }
     }
 
     private var divider: some View {

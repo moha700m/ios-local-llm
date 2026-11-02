@@ -3831,6 +3831,17 @@ final class LocalizationService: ObservableObject, @unchecked Sendable {
         ("Continue", "متابعة"),
         ("Next", "التالي"),
         ("Back", "رجوع"),
+        ("iOS gives every app a memory budget. Models are loaded into that budget, and a model that needs more is stopped before it can crash the app. The Increased Memory Limit entitlement raises the budget, but it only exists once the app is signed with a profile that grants it.", "يمنح iOS كل تطبيق ميزانية ذاكرة. تُحمَّل النماذج داخل هذه الميزانية، وإذا احتاج النموذج أكثر منها يُمنع قبل أن يتسبب في انهيار التطبيق. صلاحية «حد الذاكرة الموسّع» ترفع الميزانية، لكنها لا تُطبَّق إلا إذا وُقّع التطبيق بملف تعريف يمنحها."),
+        ("Use a paid Apple Developer account", "استخدم حساب Apple Developer مدفوعاً"),
+        ("Free personal teams cannot issue the Increased Memory Limit capability.", "حسابات المطوّر الشخصية المجانية لا تستطيع إصدار صلاحية حد الذاكرة الموسّع."),
+        ("Re-sign both bundles", "أعد توقيع الحزمتين"),
+        ("Import SanadAI.entitlements for com.sanadai.app and SanadAIShare.entitlements for the share extension in ESign or Sideloadly.", "استورد SanadAI.entitlements للتطبيق وSanadAIShare.entitlements لامتداد المشاركة داخل ESign أو Sideloadly."),
+        ("Check it inside the app", "تحقق من داخل التطبيق"),
+        ("This sheet reads the entitlement from the running process, so it turns green the moment the signature is right.", "تقرأ هذه الشاشة الصلاحية من العملية قيد التشغيل، فتتحول إلى الأخضر فور صحة التوقيع."),
+        ("Until then, pick a model that fits the current budget. The Models tab shows a fit badge for every model.", "إلى أن يتم ذلك، اختر نموذجاً يناسب الميزانية الحالية. تبويب النماذج يعرض شارة ملاءمة لكل نموذج."),
+        ("Device memory", "ذاكرة الجهاز"),
+        ("Increased Memory Limit", "حد الذاكرة الموسّع"),
+        ("Explains the memory entitlement and how to grant it.", "يشرح صلاحية الذاكرة وكيفية منحها."),
     ]
 
     // MARK: - Korean translations

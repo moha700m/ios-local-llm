@@ -98,6 +98,8 @@ This repository includes an agent-readable discovery layer:
   a copy-paste brief for implementing selected components in another app
 - [CI pipeline](Docs/CI.md) — build triggers, inputs, artifacts, and the
   unsigned IPA → ESign re-signing path
+- [Design language](Docs/DESIGN.md) — Sanad tokens, typography, RTL rules, and
+  component inventory
 
 Agents should treat `project.yml` as the Xcode project source of truth and must
 not add model weights, credentials, signing files, or generated native

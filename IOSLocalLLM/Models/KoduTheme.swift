@@ -2,13 +2,13 @@ import SwiftUI
 import UIKit   // UIFont probe in the font-name fallback path
 
 // MARK: - KoduTheme
-// Studio design language for IOSLocalLLM — Apple clear glass, neutral content,
-// and color reserved for state or a primary action. Surface colors are
-// intentionally translucent: native iOS 26 chrome gets real `.clear` glass,
-// while legacy/custom fills still reveal the shared ambient backdrop.
+// Sanad design language — warm stone paper, deep emerald ink, mint accents and
+// Apple clear glass. Colour is reserved for state or a primary action; the
+// surfaces stay translucent so iOS 26 glass has real pixels to refract.
 //
-// Source: Direction B from the Kodu design handoff.
-//   Geist + Geist Mono · #fafaf9 background · #1d4ed8 accent · table density.
+// The type name is historical (it began as the "Kodu" studio direction) and is
+// kept because 79 files read it through the environment. The palette, accents
+// and brand marks are Sanad's.
 //
 // Usage:
 //   @Environment(\.koduTheme) var T
