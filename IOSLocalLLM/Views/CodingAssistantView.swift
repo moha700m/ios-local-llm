@@ -4137,6 +4137,7 @@ private struct ChatThreadEmptyState: View {
     let onSuggestion: (String) -> Void
 
     @Environment(\.koduTheme) private var T
+    @ObservedObject private var loc = LocalizationService.shared
 
     private let suggestions = [
         "Explain this code step by step",
@@ -4156,11 +4157,11 @@ private struct ChatThreadEmptyState: View {
                 .shadow(color: T.accent.opacity(0.10), radius: 10, y: 4)
 
             VStack(spacing: AppSpacing.small) {
-                Text(emptyStateTitle)
+                Text(loc.t(emptyStateTitle))
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(T.ink)
                     .multilineTextAlignment(.center)
-                Text(emptyStateSubtitle)
+                Text(loc.t(emptyStateSubtitle))
                     .font(.callout)
                     .foregroundStyle(T.ink2)
                     .multilineTextAlignment(.center)
@@ -4305,7 +4306,7 @@ private struct ChatThreadEmptyState: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(T.accent)
                         .frame(width: 22)
-                    Text(shortLabel(for: suggestion))
+                    Text(loc.t(shortLabel(for: suggestion)))
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(T.ink)
                         .lineLimit(2)
