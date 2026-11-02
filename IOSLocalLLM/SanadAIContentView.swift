@@ -354,11 +354,11 @@ struct SanadAIContentView: View {
 
     private var tabBarItems: [SanadTabItem<Tab>] {
         [
-            .init(tag: .home, title: "home", symbol: "house"),
-            .init(tag: .assistant, title: "assistant", symbol: "bubble.left.and.text.bubble.right"),
-            .init(tag: .camera, title: "lens", symbol: "camera.viewfinder"),
-            .init(tag: .voice, title: "voice", symbol: "waveform"),
-            .init(tag: .models, title: "models", symbol: "square.stack.3d.up")
+            .init(tag: .home, title: "Home", symbol: "house"),
+            .init(tag: .assistant, title: "Assistant", symbol: "bubble.left.and.text.bubble.right"),
+            .init(tag: .camera, title: "Lens", symbol: "camera.viewfinder"),
+            .init(tag: .voice, title: "Voice", symbol: "waveform"),
+            .init(tag: .models, title: "Models", symbol: "square.stack.3d.up")
         ]
     }
 

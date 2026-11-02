@@ -473,7 +473,7 @@ jobs:
         timeout-minutes: 25
         shell: bash
         run: |
-          set -euo pipefail
+          set -uo pipefail
           mkdir -p build/ui
           xcodebuild test \
             -workspace "$WORKSPACE" \
@@ -485,9 +485,13 @@ jobs:
             -derivedDataPath "$PWD/build/DerivedDataUI" \
             -resultBundlePath "$PWD/build/ui/SanadHome.xcresult" \
             2>&1 | tee build/logs/ui-snapshots.log
+          # Export screenshots even when a test fails: the failing frame is the
+          # most useful one to look at.
+          status=${PIPESTATUS[0]}
           xcrun xcresulttool export attachments \
             --path build/ui/SanadHome.xcresult \
-            --output-path build/ui/attachments
+            --output-path build/ui/attachments || true
+          exit "$status"
 
       - name: Upload UI snapshots
         if: always()
