@@ -240,14 +240,14 @@ struct HomeView: View {
                 divider
                 statTile(
                     symbol: "memorychip",
-                    value: byteString(MemoryAdvisor.processMemoryCeiling),
+                    value: Self.byteString(MemoryAdvisor.processMemoryCeiling),
                     label: loc.t("App memory limit"),
                     tint: T.ink2
                 )
                 divider
                 statTile(
                     symbol: "internaldrive",
-                    value: byteString(center.totalStorageUsed),
+                    value: Self.byteString(center.totalStorageUsed),
                     label: "\(center.models.filter(\.isReady).count) \(loc.t("models"))",
                     tint: T.ink2
                 )
