@@ -87,6 +87,6 @@ struct SanadTabBar<Tag: Hashable>: View {
         }
         .padding(.horizontal, 18)
         .padding(.top, 6)
-        .padding(.bottom, 4)
+        .padding(.bottom, 10)
     }
 }
