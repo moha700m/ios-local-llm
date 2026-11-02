@@ -298,6 +298,10 @@ targets:
     deploymentTarget: "18.0"
     sources:
       - path: IOSLocalLLMUITests
+        excludes:
+          # Legacy unit tests that live in this folder; they belong to the
+          # unit-test target, not the UI runner.
+          - IOSLocalLLMTests
     dependencies:
       - target: SanadAI
     settings:
@@ -309,6 +313,7 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         TEST_TARGET_NAME: SanadAI
         SWIFT_EMIT_LOC_STRINGS: NO
+        SWIFT_OBJC_BRIDGING_HEADER: ""
 
   SanadAITests:
     type: bundle.unit-test
