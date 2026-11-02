@@ -4017,6 +4017,8 @@ final class LocalizationService: ObservableObject, @unchecked Sendable {
         ("Skip", "تخطٍ"),
         ("Searching Hugging Face…", "جارٍ البحث في Hugging Face…"),
         ("Open Models", "فتح النماذج"),
+        ("OLED", "OLED"),
+        ("theme", "السمة"),
     ]
 
     // MARK: - Korean translations

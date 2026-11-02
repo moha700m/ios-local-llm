@@ -1,4 +1,5 @@
 import Foundation
+import ObjectiveC.runtime
 
 // MARK: - LocalizationBridge
 //

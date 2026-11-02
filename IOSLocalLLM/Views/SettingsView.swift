@@ -1153,12 +1153,13 @@ struct SettingsView: View {
         KSection(title: loc.t("INTERFACE").lowercased(), tinted: true) {
             KRow(label: loc.t("appearance"), trailing: {
                 Picker("", selection: $settings.appearance) {
+                    Text(loc.t("system")).tag("system")
                     Text(loc.t("light")).tag("light")
                     Text(loc.t("dark")).tag("dark")
-                    Text(loc.t("OLED")).tag("oled")
+                    Text("OLED").tag("oled")
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 170)
+                .pickerStyle(.menu)
+                .tint(T.ink)
             })
             KRow(label: loc.t("language"), trailing: {
                 Picker("", selection: Binding(
