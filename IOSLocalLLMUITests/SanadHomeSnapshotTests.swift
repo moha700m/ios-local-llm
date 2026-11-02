@@ -58,4 +58,21 @@ final class SanadHomeSnapshotTests: XCTestCase {
         let app = launch(language: "en", appearance: "dark")
         captureHome(app, homeLabel: "Home", name: "home-en-dark")
     }
+
+    /// The chat screen is the largest legacy surface: its copy predates the
+    /// localization dictionary and resolves through SwiftUI's bundle lookup.
+    /// Capturing it proves the bridge reaches screens that were never wrapped
+    /// in loc.t(...).
+    func testAssistantArabicDark() {
+        let app = launch(language: "ar", appearance: "dark")
+        let assistant = app.buttons["المساعد"]
+        XCTAssertTrue(assistant.waitForExistence(timeout: 60), "Assistant tab missing")
+        assistant.tap()
+        Thread.sleep(forTimeInterval: 3.0)
+
+        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        shot.name = "assistant-ar-dark"
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
 }
