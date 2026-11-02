@@ -64,16 +64,26 @@ struct SanadTabBar<Tag: Hashable>: View {
         .padding(.vertical, 7)
         .background {
             ZStack {
+                // Opaque by design: a navigation surface must never let the
+                // list underneath read through it. The sheen supplies the
+                // glass character without sacrificing legibility.
                 RoundedRectangle(cornerRadius: 27, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                // A tinted base keeps scrolling copy from reading through the
-                // bar. Glass is the finish, not the whole surface.
+                    .fill(T.bg)
                 RoundedRectangle(cornerRadius: 27, style: .continuous)
-                    .fill(T.bg.opacity(T.isDark ? 0.82 : 0.90))
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(T.isDark ? 0.06 : 0.55),
+                                Color.clear
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
                 RoundedRectangle(cornerRadius: 27, style: .continuous)
                     .strokeBorder(T.rule, lineWidth: 0.5)
             }
-            .shadow(color: .black.opacity(T.isDark ? 0.45 : 0.10), radius: 22, y: 10)
+            .shadow(color: .black.opacity(T.isDark ? 0.45 : 0.12), radius: 22, y: 10)
         }
         .padding(.horizontal, 18)
         .padding(.top, 6)
