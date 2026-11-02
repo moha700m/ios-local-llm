@@ -16,10 +16,11 @@ struct AssistantComposer: View {
 
     @Environment(\.koduTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ObservedObject private var loc = LocalizationService.shared
 
     var body: some View {
         VStack(spacing: AssistantSpacing.xxxSmall) {
-            TextField("Message your on-device assistant", text: $text, axis: .vertical)
+            TextField(loc.t("Message your on-device assistant"), text: $text, axis: .vertical)
                 .font(.system(size: 17))
                 .foregroundStyle(.primary)
                 .tint(theme.accent)

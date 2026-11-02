@@ -467,6 +467,39 @@ jobs:
             -derivedDataPath "$PWD/build/DerivedDataTests" \
             2>&1 | tee build/logs/tests.log
 
+      - name: Run SanadAI UI snapshots
+        if: env.RUN_TESTS == 'true'
+        continue-on-error: true
+        timeout-minutes: 25
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/ui
+          xcodebuild test \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -only-testing:SanadAIUITests/SanadHomeSnapshotTests \
+            -clonedSourcePackagesDirPath "$PWD/.spm-cache" \
+            -derivedDataPath "$PWD/build/DerivedDataUI" \
+            -resultBundlePath "$PWD/build/ui/SanadHome.xcresult" \
+            2>&1 | tee build/logs/ui-snapshots.log
+          xcrun xcresulttool export attachments \
+            --path build/ui/SanadHome.xcresult \
+            --output-path build/ui/attachments
+
+      - name: Upload UI snapshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: SanadAI-ui-${{ github.run_number }}
+          path: |
+            build/ui/attachments/**
+            build/logs/ui-snapshots.log
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Write build metadata
         if: always()
         shell: bash

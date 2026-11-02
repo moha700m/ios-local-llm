@@ -292,6 +292,24 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_EMIT_LOC_STRINGS: YES
 
+  SanadAIUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: IOSLocalLLMUITests
+    dependencies:
+      - target: SanadAI
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.sanadai.app.uitests
+        INFOPLIST_FILE: ""
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: SanadAI
+        SWIFT_EMIT_LOC_STRINGS: NO
+
   SanadAITests:
     type: bundle.unit-test
     platform: iOS
@@ -659,10 +677,12 @@ schemes:
       targets:
         SanadAI: all
         SanadAITests: [test]
+        SanadAIUITests: [test]
     test:
       config: Debug
       targets:
         - SanadAITests
+        - SanadAIUITests
     archive:
       config: Release
 

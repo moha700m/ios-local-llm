@@ -35,6 +35,7 @@ struct KCaption: View {
     let text: String
     var color: Color? = nil
     @Environment(\.koduTheme) private var T
+    @ObservedObject private var loc = LocalizationService.shared
 
     var body: some View {
         // Eyebrows: sans, bold, uppercase. Neutral ink by default — the
@@ -42,7 +43,7 @@ struct KCaption: View {
         // don't need to be accent-colored. Callers pass `color:` for the rare
         // intentional accent eyebrow. (Desaturating these app-wide is a big part
         // of the professional, ChatGPT-like restraint.)
-        Text(text.uppercased())
+        Text(loc.t(text).uppercased())
             .font(T.sans(11, .bold))
             .foregroundColor(color ?? T.ink3)
             .tracking(0)
@@ -215,11 +216,12 @@ struct KSection<Content: View>: View {
     @ViewBuilder var content: () -> Content
 
     @Environment(\.koduTheme) private var T
+    @ObservedObject private var loc = LocalizationService.shared
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
-                KCaption(text: title.replacingOccurrences(of: "_", with: " "))
+                KCaption(text: loc.t(title.replacingOccurrences(of: "_", with: " ")))
                 Rectangle().fill(T.rule).frame(height: 1)
             }
             .padding(.bottom, 8)
@@ -322,18 +324,19 @@ struct KRow<Trailing: View>: View {
     var stack: Bool = false
 
     @Environment(\.koduTheme) private var T
+    @ObservedObject private var loc = LocalizationService.shared
 
     var body: some View {
         VStack(spacing: 0) {
             Group {
                 if stack {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(label).font(T.sans(15)).foregroundColor(T.ink)
+                        Text(loc.t(label)).font(T.sans(15)).foregroundColor(T.ink)
                         trailing()
                     }
                 } else {
                     HStack(spacing: 12) {
-                        Text(label).font(T.sans(15)).foregroundColor(T.ink)
+                        Text(loc.t(label)).font(T.sans(15)).foregroundColor(T.ink)
                             .fixedSize(horizontal: false, vertical: true)
                         Spacer(minLength: 8)
                         trailing()

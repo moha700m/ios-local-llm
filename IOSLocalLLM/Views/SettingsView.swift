@@ -14,10 +14,6 @@ struct SettingsView: View {
     @Environment(\.koduTheme) private var T
 
     @State private var showingHFTokenSheet: Bool = false
-    #if !targetEnvironment(macCatalyst)
-    /// nil = default monochrome LAS icon; "AppIconClassic" = previous pink mark.
-    @State private var activeIconName: String? = UIApplication.shared.alternateIconName
-    #endif
     /// Presents the onboarding model picker as a sheet so existing
     /// users (already past the original 3-page onboarding) can run
     /// the new picker without uninstalling.
@@ -1153,62 +1149,6 @@ struct SettingsView: View {
         (VoiceEngineKind(rawValue: settings.voiceEngine) ?? .appleSystem).shortName
     }
 
-    // MARK: - App Icon Picker
-
-    #if !targetEnvironment(macCatalyst)
-    /// Default "Neon" icon + the previous "Classic" mark as an alternate.
-    /// Declared via CFBundleAlternateIcons in Info.plist; the classic asset
-    /// compiles because of INCLUDE_ALL_APPICON_ASSETS.
-    private var appIconPickerRow: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            KMono(text: "app icon", size: 11.5, color: T.ink, mono: false)
-            HStack(spacing: 14) {
-                appIconOption(name: nil, title: "Monochrome", preview: "AppIconPreview")
-                appIconOption(name: "AppIconClassic", title: "Classic", preview: "AppIconClassicPreview")
-                Spacer()
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-    }
-
-    private func appIconOption(name: String?, title: String, preview: String) -> some View {
-        let selected = activeIconName == name
-        return Button {
-            guard !selected else { return }
-            HapticManager.impact(.light)
-            activeIconName = name
-            UIApplication.shared.setAlternateIconName(name) { error in
-                guard let error else { return }
-                Task { @MainActor in
-                    ToastCenter.shared.info(
-                        "Couldn't change app icon",
-                        detail: error.localizedDescription
-                    )
-                }
-            }
-        } label: {
-            VStack(spacing: 5) {
-                Image(preview)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 52, height: 52)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .strokeBorder(selected ? T.accent : T.rule,
-                                          lineWidth: selected ? 2 : 1)
-                    )
-                KMono(text: title, size: 9.5,
-                      color: selected ? T.accent : T.ink3, mono: false)
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(title) app icon")
-        .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-    #endif
-
     private var uiSection: some View {
         KSection(title: loc.t("INTERFACE").lowercased(), tinted: true) {
             KRow(label: loc.t("appearance"), trailing: {
@@ -1220,11 +1160,6 @@ struct SettingsView: View {
                 .pickerStyle(.segmented)
                 .frame(width: 170)
             })
-            #if !targetEnvironment(macCatalyst)
-            if UIApplication.shared.supportsAlternateIcons {
-                appIconPickerRow
-            }
-            #endif
             KRow(label: loc.t("language"), trailing: {
                 Picker("", selection: Binding(
                     get: { AppLanguage(rawValue: settings.uiLanguage) ?? .system },
